@@ -36,7 +36,26 @@ class ApproveSubmissionRequest extends FormRequest
                 SubmissionStatus::Rejected->value,
                 SubmissionStatus::NeedsReview->value,
             ])],
-            'feedback' => ['nullable', 'string', 'max:5000'],
+            // Un renvoi ou un rejet doit expliquer à l'apprenant ce qu'il doit reprendre.
+            'feedback' => [
+                Rule::requiredIf(fn (): bool => in_array($this->input('decision'), self::DECISIONS_WITH_FEEDBACK, true)),
+                'nullable',
+                'string',
+                'max:5000',
+            ],
+        ];
+    }
+
+    /** @var list<string> */
+    private const DECISIONS_WITH_FEEDBACK = ['reject', 'rejetee', 'a_revoir', 'revoir'];
+
+    /**
+     * @return array<string, string>
+     */
+    public function messages(): array
+    {
+        return [
+            'feedback.required' => 'Un commentaire est obligatoire pour renvoyer ou rejeter un livrable.',
         ];
     }
 }

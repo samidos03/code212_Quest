@@ -642,10 +642,13 @@ export const mockApi = {
     return seedSubmissions.map((s) => ({ ...s, status: state.submissionStatus[s.id] ?? s.status }))
   },
 
-  async reviewSubmission(id: number, decision: 'validee' | 'rejetee', feedback: string): Promise<Submission> {
+  async reviewSubmission(id: number, decision: import('@/types').ReviewDecision, feedback: string): Promise<Submission> {
     await delay(300)
     const submission = seedSubmissions.find((s) => s.id === id)
     if (!submission) throw new Error('Soumission introuvable')
+    if (decision === 'a_revoir' && !feedback.trim()) {
+      throw new Error('Un commentaire est obligatoire pour renvoyer ou rejeter un livrable.')
+    }
     state.submissionStatus[id] = decision
     persist()
     if (decision === 'validee') {

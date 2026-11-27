@@ -31,6 +31,12 @@ class SubmissionResource extends JsonResource
             'xpAwarded' => (int) $this->xp_reward,
             'germes' => (int) $this->germes_reward,
             'note' => $this->review_note,
+            'feedback' => $this->review_note,
+            'tentative' => $this->whenLoaded('questSubmission', fn (): ?int => $this->questSubmission?->attempt_number !== null ? (int) $this->questSubmission->attempt_number : null),
+            'correcteur' => $this->whenLoaded('reviewer', fn (): ?array => $this->reviewer === null ? null : [
+                'id' => $this->reviewer->id,
+                'nom' => $this->reviewer->name,
+            ]),
             'envoye_le' => $this->created_at?->toIso8601String(),
             'corrige_le' => $this->reviewed_at?->toIso8601String(),
             'apprenant' => $this->whenLoaded('user', fn (): array => [
