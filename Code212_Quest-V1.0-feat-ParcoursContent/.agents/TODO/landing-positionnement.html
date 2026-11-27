@@ -1,0 +1,659 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="theme-color" content="#0b0716" />
+<title>Test de positionnement — Code212 Quest · Université Cadi Ayyad</title>
+<meta name="description" content="90 secondes pour situer votre niveau en informatique et débloquer votre parcours Code212 personnalisé." />
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%23c5027f'/%3E%3Cstop offset='1' stop-color='%236701e6'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='64' height='64' rx='16' fill='url(%23g)'/%3E%3Ctext x='32' y='43' font-family='sans-serif' font-size='26' font-weight='700' fill='white' text-anchor='middle'%3E212%3C/text%3E%3C/svg%3E" />
+
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        colors: {
+          magenta: { DEFAULT: '#c5027f' },
+          cyan:    { DEFAULT: '#00dfff', fg: '#0090b0' },
+          violet:  { DEFAULT: '#6701e6' },
+          ink:     { DEFAULT: '#0b0716', soft: '#171029', line: '#251a3d' },
+        },
+        fontFamily: {
+          display: ['Rajdhani', 'Inter', 'sans-serif'],
+          sans: ['Inter', 'system-ui', 'sans-serif'],
+        },
+        boxShadow: {
+          glow: '0 0 0 1px rgba(103,1,230,.35), 0 24px 60px -24px rgba(103,1,230,.65)',
+          'glow-magenta': '0 0 0 1px rgba(197,2,127,.35), 0 24px 60px -24px rgba(197,2,127,.6)',
+          card: '0 1px 2px rgba(11,7,22,.04), 0 12px 32px -18px rgba(11,7,22,.25)',
+        },
+        keyframes: {
+          floaty: { '0%,100%': { transform: 'translateY(0)' }, '50%': { transform: 'translateY(-10px)' } },
+          rise: { from: { opacity: '0', transform: 'translateY(14px)' }, to: { opacity: '1', transform: 'translateY(0)' } },
+          pop: { '0%': { transform: 'scale(.86)', opacity: '0' }, '60%': { transform: 'scale(1.04)' }, '100%': { transform: 'scale(1)', opacity: '1' } },
+          pulseRing: { '0%': { transform: 'scale(.9)', opacity: '.55' }, '100%': { transform: 'scale(1.7)', opacity: '0' } },
+          drift: { '0%,100%': { transform: 'translate3d(0,0,0) scale(1)' }, '50%': { transform: 'translate3d(24px,-18px,0) scale(1.08)' } },
+        },
+        animation: {
+          floaty: 'floaty 6s ease-in-out infinite',
+          rise: 'rise .5s cubic-bezier(.22,1,.36,1) both',
+          pop: 'pop .38s cubic-bezier(.22,1,.36,1) both',
+          pulseRing: 'pulseRing 2.4s cubic-bezier(.2,.7,.3,1) infinite',
+          drift: 'drift 18s ease-in-out infinite',
+        },
+      },
+    },
+  }
+</script>
+
+<style>
+  html { -webkit-text-size-adjust: 100%; }
+  body { margin: 0; min-width: 320px; }
+  .grid-lines {
+    background-image: linear-gradient(rgba(255,255,255,.055) 1px, transparent 1px),
+                      linear-gradient(90deg, rgba(255,255,255,.055) 1px, transparent 1px);
+    background-size: 46px 46px;
+  }
+  .noise::after {
+    content: ''; position: absolute; inset: 0; pointer-events: none; opacity: .35;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.35'/%3E%3C/svg%3E");
+  }
+  .gradient-text { background: linear-gradient(100deg,#ff5cb8 0%,#a678ff 45%,#6ef0ff 115%); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .brand-gradient { background-image: linear-gradient(120deg,#c5027f 0%,#6701e6 52%,#00dfff 140%); }
+  .no-scrollbar::-webkit-scrollbar { display: none; }
+  .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+  :focus-visible { outline: 2px solid #6701e6; outline-offset: 2px; border-radius: 10px; }
+  .option[aria-pressed="true"] { border-color: #6701e6; background: rgba(103,1,230,.06); }
+</style>
+</head>
+
+<body class="bg-slate-50 font-sans text-slate-900 antialiased">
+
+<!-- ══════════════════════════════════════════════════════════════════════
+     ÉCRAN 1 — HERO / LANDING
+     ══════════════════════════════════════════════════════════════════════ -->
+<section id="hero" class="relative isolate flex min-h-[100svh] flex-col overflow-hidden bg-ink noise">
+  <!-- halos -->
+  <div class="pointer-events-none absolute -left-32 -top-40 h-[520px] w-[520px] animate-drift rounded-full bg-violet/30 blur-[120px]"></div>
+  <div class="pointer-events-none absolute -right-24 top-10 h-[460px] w-[460px] animate-drift rounded-full bg-magenta/25 blur-[120px] [animation-delay:-6s]"></div>
+  <div class="pointer-events-none absolute bottom-[-180px] left-1/3 h-[420px] w-[420px] animate-drift rounded-full bg-cyan/20 blur-[130px] [animation-delay:-11s]"></div>
+  <div class="grid-lines pointer-events-none absolute inset-0 opacity-70"></div>
+
+  <!-- barre supérieure -->
+  <header class="relative z-10 mx-auto flex w-full max-w-6xl items-center justify-between px-5 py-6 sm:px-8">
+    <div class="flex items-center gap-3">
+      <span class="grid h-10 w-10 place-items-center rounded-xl brand-gradient font-display text-[15px] font-bold leading-none text-white shadow-[0_8px_20px_-8px_rgba(197,2,127,.8)]">212</span>
+      <span class="leading-none">
+        <span class="block font-display text-[19px] font-bold tracking-[.12em] text-white">CODE<span class="text-magenta">212</span></span>
+        <span class="mt-1 block text-[8.5px] font-bold uppercase tracking-[.2em] text-white/45">Skills · Challenges · Future</span>
+      </span>
+    </div>
+    <span class="hidden rounded-full border border-white/15 px-3 py-1.5 text-[10.5px] font-bold uppercase tracking-[.16em] text-white/60 sm:block">
+      Université Cadi Ayyad · Marrakech
+    </span>
+  </header>
+
+  <!-- contenu -->
+  <div class="relative z-10 mx-auto grid w-full max-w-6xl flex-1 items-center gap-12 px-5 py-10 sm:px-8 lg:grid-cols-[1.05fr_.95fr]">
+    <div class="max-w-3xl">
+      <span class="inline-flex items-center gap-2 rounded-full border border-cyan/30 bg-cyan/10 px-3.5 py-1.5 text-[10.5px] font-bold uppercase tracking-[.18em] text-cyan">
+        <span class="relative flex h-1.5 w-1.5">
+          <span class="absolute inline-flex h-full w-full animate-pulseRing rounded-full bg-cyan"></span>
+          <span class="relative inline-flex h-1.5 w-1.5 rounded-full bg-cyan"></span>
+        </span>
+        Évaluation initiale · avant inscription
+      </span>
+
+      <h1 class="mt-6 font-display text-[40px] font-bold leading-[1.02] text-white sm:text-[62px] lg:text-[72px]">
+        Test de<br />
+        <span class="gradient-text">positionnement</span>
+      </h1>
+
+      <p class="mt-5 max-w-xl text-[15px] leading-relaxed text-white/70 sm:text-[16.5px]">
+        90 secondes, 10 questions tirées au hasard. Elles situent votre niveau réel en informatique
+        et construisent votre parcours Code212 : les quêtes, le niveau et les badges que vous
+        débloquerez dès votre première connexion.
+      </p>
+
+      <!-- arguments -->
+      <dl class="mt-8 grid max-w-2xl grid-cols-2 gap-3 sm:grid-cols-4">
+        <div class="rounded-2xl border border-white/10 bg-white/[.04] p-4 backdrop-blur-sm">
+          <dt class="text-[10px] font-bold uppercase tracking-[.16em] text-white/45">Durée</dt>
+          <dd class="mt-1 font-display text-[22px] font-bold leading-none text-white">1 min 30</dd>
+        </div>
+        <div class="rounded-2xl border border-white/10 bg-white/[.04] p-4 backdrop-blur-sm">
+          <dt class="text-[10px] font-bold uppercase tracking-[.16em] text-white/45">Questions</dt>
+          <dd class="mt-1 font-display text-[22px] font-bold leading-none text-white">10</dd>
+        </div>
+        <div class="rounded-2xl border border-white/10 bg-white/[.04] p-4 backdrop-blur-sm">
+          <dt class="text-[10px] font-bold uppercase tracking-[.16em] text-white/45">Niveau</dt>
+          <dd class="mt-1 font-display text-[22px] font-bold leading-none text-white">3 paliers</dd>
+        </div>
+        <div class="rounded-2xl border border-white/10 bg-white/[.04] p-4 backdrop-blur-sm">
+          <dt class="text-[10px] font-bold uppercase tracking-[.16em] text-white/45">Engagement</dt>
+          <dd class="mt-1 font-display text-[22px] font-bold leading-none text-white">0</dd>
+        </div>
+      </dl>
+
+      <div class="mt-9 flex flex-col gap-3 sm:flex-row sm:items-center">
+        <button id="start-btn" type="button"
+          class="group inline-flex h-14 shrink-0 items-center justify-center gap-2.5 whitespace-nowrap rounded-2xl brand-gradient px-8 text-[16px] font-bold text-white shadow-[0_18px_44px_-18px_rgba(103,1,230,.95)] transition-all hover:brightness-110 active:scale-[.98]">
+          Commencer le test
+          <svg class="h-5 w-5 transition-transform group-hover:translate-x-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+        </button>
+        <p class="text-[12.5px] text-white/45">Sans inscription · 10 questions aléatoires · résultat immédiat</p>
+      </div>
+
+      <ul class="mt-10 flex flex-wrap gap-x-6 gap-y-2 text-[12.5px] text-white/50">
+        <li class="inline-flex items-center gap-2"><span class="text-cyan">✓</span> Aucune connaissance préalable requise</li>
+        <li class="inline-flex items-center gap-2"><span class="text-cyan">✓</span> Résultat non disqualifiant</li>
+        <li class="inline-flex items-center gap-2"><span class="text-cyan">✓</span> Réalisable sur mobile</li>
+      </ul>
+    </div>
+
+    <!-- aperçu du test -->
+    <div class="relative hidden lg:block">
+      <div class="relative overflow-hidden rounded-[28px] border border-white/12 bg-white/[.055] p-6 shadow-[0_40px_100px_-40px_rgba(103,1,230,.85)] backdrop-blur-xl">
+        <div class="pointer-events-none absolute inset-0 brand-gradient opacity-[.08]"></div>
+        <div class="pointer-events-none absolute -right-10 -top-10 h-40 w-40 rounded-full bg-cyan/20 blur-3xl"></div>
+
+        <div class="relative">
+          <div class="flex items-center justify-between gap-3">
+            <span class="rounded-full border border-cyan/30 bg-cyan/10 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[.14em] text-cyan">Question 4 / 10</span>
+            <span class="flex items-center gap-1.5 rounded-full border border-white/12 bg-white/[.06] px-2.5 py-1 font-display text-[12.5px] font-bold tabular-nums text-white/80">
+              <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+              01:12
+            </span>
+          </div>
+
+          <p class="mt-5 text-[10.5px] font-bold uppercase tracking-[.18em] text-white/40">Algorithmique</p>
+          <p class="mt-2 font-display text-[21px] font-bold leading-snug text-white">
+            Quelle structure permet d'accéder à un élément par son indice en temps constant ?
+          </p>
+
+          <div class="mt-5 space-y-2">
+            <div class="flex items-center gap-3 rounded-xl border border-violet/50 bg-violet/15 px-3.5 py-3">
+              <span class="grid h-6 w-6 shrink-0 place-items-center rounded-lg bg-violet font-display text-[12px] font-bold text-white">B</span>
+              <span class="text-[13.5px] font-medium text-white/90">Le tableau (array)</span>
+            </div>
+            <div class="flex items-center gap-3 rounded-xl border border-white/10 bg-white/[.04] px-3.5 py-3 opacity-70">
+              <span class="grid h-6 w-6 shrink-0 place-items-center rounded-lg border border-white/20 font-display text-[12px] font-bold text-white/60">A</span>
+              <span class="text-[13.5px] font-medium text-white/60">La liste chaînée</span>
+            </div>
+          </div>
+
+          <div class="mt-5 h-1.5 overflow-hidden rounded-full bg-white/10">
+            <div class="h-full w-[40%] rounded-full brand-gradient"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="absolute -left-12 top-1/2 -translate-y-1/2 animate-floaty rounded-2xl border border-white/12 bg-white/[.08] px-4 py-3 shadow-xl backdrop-blur-xl">
+        <p class="text-[10px] font-bold uppercase tracking-[.14em] text-white/45">Gains</p>
+        <p class="mt-0.5 font-display text-[18px] font-bold text-white">+450 XP</p>
+      </div>
+      <div class="absolute -right-6 -bottom-7 animate-floaty rounded-2xl border border-white/12 bg-white/[.08] px-4 py-3 shadow-xl backdrop-blur-xl [animation-delay:-3s]">
+        <p class="text-[10px] font-bold uppercase tracking-[.14em] text-white/45">Profil obtenu</p>
+        <p class="mt-0.5 font-display text-[18px] font-bold text-white">Intermédiaire</p>
+      </div>
+    </div>
+  </div>
+
+  <footer class="relative z-10 mx-auto w-full max-w-6xl px-5 pb-8 text-[11.5px] text-white/35 sm:px-8">
+    © 2026 Centre CODE212 · Université Cadi Ayyad, Marrakech — Plateforme de gamification pédagogique
+  </footer>
+</section>
+
+
+<!-- ══════════════════════════════════════════════════════════════════════
+     ÉCRAN 2 — QUIZ
+     ══════════════════════════════════════════════════════════════════════ -->
+<section id="quiz" class="hidden min-h-[100svh] bg-slate-50">
+  <div class="mx-auto flex min-h-[100svh] w-full max-w-3xl flex-col px-4 py-5 sm:px-6 sm:py-8">
+
+    <!-- en-tête : minuteur + progression -->
+    <header class="flex items-center gap-4">
+      <div class="relative grid h-14 w-14 shrink-0 place-items-center sm:h-16 sm:w-16">
+        <svg viewBox="0 0 100 100" class="h-full w-full -rotate-90">
+          <circle cx="50" cy="50" r="44" fill="none" stroke="#e8eaf0" stroke-width="9"/>
+          <circle id="timer-arc" cx="50" cy="50" r="44" fill="none" stroke="#6701e6" stroke-width="9"
+                  stroke-linecap="round" stroke-dasharray="276.5" stroke-dashoffset="0"
+                  style="transition: stroke-dashoffset .95s linear, stroke .4s ease"/>
+        </svg>
+        <span id="timer-label" class="absolute font-display text-[17px] font-bold tabular-nums text-slate-900">90</span>
+      </div>
+
+      <div class="min-w-0 flex-1">
+        <div class="flex items-baseline justify-between gap-3">
+          <p class="kicker text-[10.5px] font-bold uppercase tracking-[.18em] text-slate-400">Test de positionnement</p>
+          <p class="shrink-0 font-display text-[15px] font-bold text-slate-700">
+            <span id="q-index">1</span><span class="text-slate-300">/</span><span id="q-total">10</span>
+          </p>
+        </div>
+        <div class="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-slate-200">
+          <div id="q-progress" class="h-full rounded-full brand-gradient transition-[width] duration-500" style="width:10%"></div>
+        </div>
+      </div>
+
+      <button id="quit-btn" type="button" aria-label="Quitter le test"
+        class="hidden h-10 w-10 shrink-0 place-items-center rounded-xl border border-slate-200 bg-white text-slate-400 transition-colors hover:border-slate-300 hover:text-slate-700 sm:grid">
+        <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+      </button>
+    </header>
+
+    <!-- carte question -->
+    <div class="mt-6 flex flex-1 flex-col sm:mt-8">
+      <article class="panel rounded-3xl border border-slate-200 bg-white p-5 shadow-card sm:p-8">
+        <p id="q-theme" class="text-[10.5px] font-bold uppercase tracking-[.18em] text-violet">Algorithmique</p>
+        <h2 id="q-text" class="mt-3 font-display text-[23px] font-bold leading-snug text-slate-900 sm:text-[29px]"></h2>
+
+        <div id="q-options" class="mt-6 grid gap-2.5"></div>
+
+        <!-- retour après réponse -->
+        <div id="q-feedback" class="mt-5 hidden rounded-2xl border p-4">
+          <p id="q-feedback-title" class="flex items-center gap-2 text-[14px] font-bold"></p>
+          <p id="q-feedback-text" class="mt-1.5 text-[13px] leading-relaxed"></p>
+        </div>
+      </article>
+
+      <div class="mt-5 flex items-center justify-between gap-3">
+        <p class="hidden text-[11.5px] text-slate-400 sm:block">
+          Raccourcis : <kbd class="rounded border border-slate-200 bg-white px-1.5 py-0.5 font-mono text-[10px]">1</kbd>–
+          <kbd class="rounded border border-slate-200 bg-white px-1.5 py-0.5 font-mono text-[10px]">4</kbd> pour répondre,
+          <kbd class="rounded border border-slate-200 bg-white px-1.5 py-0.5 font-mono text-[10px]">Entrée</kbd> pour continuer
+        </p>
+        <button id="next-btn" type="button" disabled
+          class="inline-flex h-11 w-full shrink-0 items-center justify-center gap-2 rounded-xl bg-slate-900 px-5 text-[14px] font-bold text-white transition-all hover:bg-slate-800 active:scale-[.98] disabled:cursor-not-allowed disabled:opacity-35 sm:w-auto">
+          Suivant
+          <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+        </button>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<!-- ══════════════════════════════════════════════════════════════════════
+     ÉCRAN 3 — RÉSULTAT
+     ══════════════════════════════════════════════════════════════════════ -->
+<section id="result" class="hidden min-h-[100svh] bg-slate-50">
+  <div class="mx-auto flex min-h-[100svh] w-full max-w-4xl flex-col justify-center px-4 py-10 sm:px-6 sm:py-14">
+
+    <div class="relative overflow-hidden rounded-3xl border border-slate-200 bg-white p-6 shadow-card sm:p-10">
+      <div class="pointer-events-none absolute -right-20 -top-24 h-64 w-64 rounded-full bg-violet/10 blur-3xl"></div>
+      <div class="pointer-events-none absolute -bottom-24 -left-16 h-56 w-56 rounded-full bg-magenta/10 blur-3xl"></div>
+
+      <div class="relative z-10 grid gap-8 lg:grid-cols-[auto_1fr] lg:items-center">
+        <!-- score -->
+        <div class="relative mx-auto grid h-44 w-44 shrink-0 place-items-center">
+          <svg viewBox="0 0 100 100" class="h-full w-full -rotate-90">
+            <circle cx="50" cy="50" r="44" fill="none" stroke="#eef0f5" stroke-width="8"/>
+            <circle id="score-arc" cx="50" cy="50" r="44" fill="none" stroke="url(#scoreGrad)" stroke-width="8" stroke-linecap="round"
+                    stroke-dasharray="276.5" stroke-dashoffset="276.5" style="transition: stroke-dashoffset 1.1s cubic-bezier(.22,1,.36,1)"/>
+            <defs>
+              <linearGradient id="scoreGrad" gradientUnits="userSpaceOnUse" x1="94" y1="50" x2="50" y2="94">
+                <stop offset="0%" stop-color="#c5027f"/><stop offset="55%" stop-color="#6701e6"/><stop offset="100%" stop-color="#00dfff"/>
+              </linearGradient>
+            </defs>
+          </svg>
+          <div class="absolute text-center">
+            <p id="score-value" class="font-display text-[46px] font-bold leading-none text-slate-900">0</p>
+            <p class="mt-1 text-[10px] font-bold uppercase tracking-[.16em] text-slate-400">sur 10</p>
+          </div>
+        </div>
+
+        <!-- profil -->
+        <div>
+          <span class="inline-flex items-center gap-1.5 rounded-full bg-violet/10 px-3 py-1 text-[10.5px] font-bold uppercase tracking-[.16em] text-violet">
+            Votre profil
+          </span>
+          <h2 id="result-title" class="mt-3 font-display text-[28px] font-bold leading-tight text-slate-900 sm:text-[34px]"></h2>
+          <p id="result-text" class="mt-2 max-w-lg text-[14px] leading-relaxed text-slate-600"></p>
+
+          <div class="mt-5 flex flex-wrap gap-2">
+            <span id="result-tag-1" class="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-[12px] font-semibold text-slate-600"></span>
+            <span id="result-tag-2" class="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-[12px] font-semibold text-slate-600"></span>
+            <span id="result-tag-3" class="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-[12px] font-semibold text-slate-600"></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- parcours recommandés -->
+      <div class="relative z-10 mt-9 border-t border-slate-100 pt-7">
+        <h3 class="text-[10.5px] font-bold uppercase tracking-[.18em] text-slate-400">Parcours recommandés</h3>
+        <div id="recommendations" class="mt-4 grid gap-3 sm:grid-cols-3"></div>
+      </div>
+
+      <div class="relative z-10 mt-8 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <p class="text-[12px] text-slate-400">Ce test n'est pas éliminatoire : vous pourrez le recommencer.</p>
+        <button id="cta-btn" type="button"
+          class="inline-flex h-12 items-center justify-center gap-2 rounded-2xl brand-gradient px-7 text-[15px] font-bold text-white shadow-[0_16px_40px_-18px_rgba(103,1,230,.9)] transition-all hover:brightness-110 active:scale-[.98]">
+          Accéder à mon espace
+          <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+        </button>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<script>
+(() => {
+  'use strict'
+
+  /* ═══════════════════════════════════════════════════════════════════════
+     BANQUE DE QUESTIONS
+     ⚠️  SUPPORT PROVISOIRE — À REMPLACER PAR L'API.
+     En production : fetch('/api/v1/placement/questions?count=10')
+     qui renvoie [{ id, theme, text, options:[...], correctIndex, explanation }]
+     ═══════════════════════════════════════════════════════════════════════ */
+  const QUESTION_BANK = [
+    { theme: 'Algorithmique', text: "Quelle structure permet d'accéder à un élément par son indice en temps constant ?",
+      options: ['La liste chaînée', 'Le tableau (array)', 'La pile', 'Le file d’attente'], correctIndex: 1,
+      explanation: "Un tableau stocke ses éléments de façon contiguë : l'accès par indice est en O(1), là où une liste chaînée demande de parcourir les maillons." },
+
+    { theme: 'Bases de données', text: "Que signifie l'acronyme SQL ?",
+      options: ['Structured Query Language', 'Sequential Quality Logic', 'System Query Layer', 'Standard Quantified Logic'], correctIndex: 0,
+      explanation: "SQL (Structured Query Language) est le langage standard pour interroger et manipuler les bases de données relationnelles." },
+
+    { theme: 'Programmation', text: "Quel est le résultat de 7 % 3 en Python ?",
+      options: ['1', '2', '0', 'Erreur'], correctIndex: 0,
+      explanation: "L'opérateur modulo (%) renvoie le reste de la division entière : 7 = 3 × 2 + 1, donc le reste vaut 1." },
+
+    { theme: 'Réseaux', text: "Quelle adresse IP correspond à la classe C privée (utilisée en interne) ?",
+      options: ['10.0.0.1', '172.16.5.4', '192.168.1.1', '8.8.8.8'], correctIndex: 2,
+      explanation: "Les plages privées sont 10.0.0.0/8, 172.16.0.0/12 et 192.168.0.0/16 : elles ne sont pas routables sur Internet." },
+
+    { theme: 'Algorithmique', text: "Quel algorithme de tri a une complexité moyenne en O(n log n) ?",
+      options: ['Le tri par insertion', 'Le tri à bulles', 'Le tri fusion', 'Le tri par sélection'], correctIndex: 2,
+      explanation: "Le tri fusion divise le tableau en deux moitiés, les trie puis les fusionne : c'est le pire cas qui reste en O(n log n)." },
+
+    { theme: 'Web', text: "Que fait la balise <meta name=\"viewport\"> ?",
+      options: ['Elle définit le titre de l’onglet', 'Elle adapte l’affichage aux écrans mobiles', 'Elle charge une feuille de style', 'Elle déclare la langue du document'], correctIndex: 1,
+      explanation: "La balise viewport indique au navigateur comment dimensionner la page sur mobile ; sans elle, le site est zoomé à l'échelle desktop." },
+
+    { theme: 'Systèmes', text: "Combien de bits contient un octet ?",
+      options: ['4', '8', '16', '32'], correctIndex: 1,
+      explanation: "Un octet vaut 8 bits, soit 256 valeurs possibles de 0 à 255." },
+
+    { theme: 'Bases de données', text: "Dans une base relationnelle, une clé étrangère sert à :",
+      options: ['Accélérer les requêtes', 'Lier les lignes d’une table à une autre table', 'Supprimer des doublons', ' chiffrer les données'], correctIndex: 1,
+      explanation: "La clé étrangère matérialise une relation entre deux tables et garantit l'intégrité référentielle." },
+
+    { theme: 'Cybersécurité', text: "Quelle est la meilleure pratique face à un mot de passe compromis ?",
+      options: ['Le changer et activer la double authentification', 'L’ignorer s’il est ancien', 'Le réutiliser sur d’autres sites', 'L’envoyer par e-mail au service informatique'], correctIndex: 0,
+      explanation: "Changer le mot de passe ferme l’accès compromis ; la double authentification (2FA) ajoute un second facteur, fortement recommandé." },
+
+    { theme: 'Programmation', text: "Quelle structure utilise le principe « dernier entré, premier sorti » ?",
+      options: ['La pile (stack)', 'La file (queue)', 'Le tas (heap)', 'Le dictionnaire'], correctIndex: 1,
+      explanation: "La file FIFO (First In, First Out) sert le plus ancien élément en premier ; la pile LIFO sert le dernier élément inséré." },
+
+    { theme: 'Réseaux', text: 'Quel protocole est utilisé pour sécuriser les échanges web (HTTP → HTTPS) ?',
+      options: ['FTP', 'TLS/SSL', 'SMTP', 'DNS'], correctIndex: 1,
+      explanation: "TLS (souvent appelé SSL) chiffre la connexion entre le navigateur et le serveur." },
+
+    { theme: 'Logique', text: "Si tous les développeurs sont des lecteurs, et que certains lecteurs sont Rosa, alors :",
+      options: ['Certains développeurs sont Rosa', 'Aucun développeur n’est Rosa', 'Tous les lecteurs sont développeurs', 'Tous les développeurs sont lecteurs et Rosa'], correctIndex: 1,
+      explanation: "Le syllogisme ne permet pas de conclure : « certains lecteurs » ne dit rien des développeurs. C'est une forme d'inférence invalide." },
+
+    { theme: 'Systèmes', text: "Que fait la commande chmod 755 fichier.sh ?",
+      options: ['Elle rend le fichier exécutable', 'Elle le supprime', 'Elle le compresse', 'Elle le renomme'], correctIndex: 0,
+      explanation: "755 donne les permissions rwx au propriétaire, r-x au groupe et r-x aux autres : le fichier devient exécutable." },
+
+    { theme: 'Bases de données', text: "Quel mot-clé SQL sert à regrouper les lignes ayant la même valeur ?",
+      options: ['ORDER BY', 'GROUP BY', 'HAVING', 'JOIN'], correctIndex: 1,
+      explanation: "GROUP BY regroupe les lignes ; HAVING filtre ensuite ces groupes, contrairement à WHERE qui filtre les lignes." },
+
+    { theme: 'Algorithmique', text: "Quelle recherche est en O(log n) sur une liste triée ?",
+      options: ['La recherche linéaire', 'La recherche dichotomique (binaire)', 'La recherche exhaustive', 'La recherche par balayage'], correctIndex: 1,
+      explanation: "La recherche binaire divise l'espace de recherche en deux à chaque étape : elle passe la liste de n à log₂(n) comparaisons." },
+
+    { theme: 'Web', text: 'Quelle propriété CSS applique un espacement vertical uniforme entre les enfants ?',
+      options: ['display: flex', 'gap', 'margin: auto', 'position: relative'], correctIndex: 1,
+      explanation: "La propriété gap définit l'espace entre les éléments d'un conteneur flex ou grid sans passer par des marges individuelles." },
+
+    { theme: 'Programmation', text: "En JavaScript, que vaut typeof [] ?",
+      options: ['"array"', '"object"', '"list"', '"undefined"'], correctIndex: 1,
+      explanation: "typeof renvoie « object » pour un tableau, car en JavaScript un tableau est un objet spécialisé." },
+
+    { theme: 'Logique', text: "Un booléen vaut VRAI ou FAUX. Combien de tables de vérité possibles existe-t-il pour deux booléens ?",
+      options: ['2', '4', '8', '16'], correctIndex: 1,
+      explanation: "Chaque booléen a 2 valeurs : 2 × 2 = 4 combinaisons (VV, VF, FV, FF)." },
+  ]
+
+  const RECOMMENDATIONS = [
+    { icon: '&lt;/&gt;', title: 'Développement Web Full-Stack', desc: 'HTML, JavaScript, API et Git', gradient: 'from-[#6701e6] to-[#c5027f]' },
+    { icon: '✦', title: 'IA & Data Science', desc: 'Prompting, modèles et analyse de données', gradient: 'from-[#c5027f] to-[#6701e6]' },
+    { icon: '◉', title: 'Cybersécurité', desc: 'OWASP, réseau et durcissement', gradient: 'from-[#00b8d4] to-[#6701e6]' },
+    { icon: '◈', title: 'Data & Analytics', desc: 'Nettoyage, visualisation et décision', gradient: 'from-[#f59e0b] to-[#c5027f]' },
+    { icon: '▲', title: 'DevOps & Cloud', desc: 'Docker, CI/CD et déploiement', gradient: 'from-[#00b8d4] to-[#0f8fbf]' },
+    { icon: '★', title: 'Mentorat Tech', desc: 'Communauté, communication et leadership', gradient: 'from-[#f59e0b] to-[#c5027f]' },
+  ]
+
+  /* ═══════════════════════════════════════════════════════════════════════ */
+
+  const DURATION = 90
+  const COUNT = 10
+  const CIRC = 276.5 // circonférence du cercle de rayon 44 (viewBox 100)
+
+  const el = (id) => document.getElementById(id)
+  const screens = { hero: el('hero'), quiz: el('quiz'), result: el('result') }
+
+  let questions = []
+  let current = 0
+  let answers = []
+  let remaining = DURATION
+  let timer = null
+  let locked = false
+
+  /* ------------------------------------------------------- utilitaires */
+
+  const shuffle = (arr) => {
+    const a = arr.slice()
+    for (let i = a.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1))
+      ;[a[i], a[j]] = [a[j], a[i]]
+    }
+    return a
+  }
+
+  const pickQuestions = () => shuffle(QUESTION_BANK).slice(0, COUNT)
+
+  const showScreen = (name) => {
+    Object.entries(screens).forEach(([key, node]) => node.classList.toggle('hidden', key !== name))
+    window.scrollTo({ top: 0, behavior: 'instant' })
+  }
+
+  /* --------------------------------------------------------- minuterie */
+
+  const renderTimer = () => {
+    const ratio = remaining / DURATION
+    el('timer-label').textContent = remaining
+    el('timer-arc').style.strokeDashoffset = String(CIRC * (1 - ratio))
+    const urgent = remaining <= 20
+    el('timer-arc').setAttribute('stroke', urgent ? '#c5027f' : remaining <= 45 ? '#f59e0b' : '#6701e6')
+    el('timer-label').classList.toggle('text-magenta', urgent)
+    el('timer-label').classList.toggle('animate-pulse', urgent)
+  }
+
+  const startTimer = () => {
+    clearInterval(timer)
+    remaining = DURATION
+    renderTimer()
+    timer = setInterval(() => {
+      remaining -= 1
+      if (remaining <= 0) { remaining = 0; renderTimer(); finish(); return }
+      renderTimer()
+    }, 1000)
+  }
+
+  /* -------------------------------------------------------------- quiz */
+
+  const renderQuestion = () => {
+    const q = questions[current]
+    locked = false
+
+    el('q-theme').textContent = q.theme
+    el('q-text').textContent = q.text
+    el('q-index').textContent = String(current + 1)
+    el('q-total').textContent = String(questions.length)
+    el('q-progress').style.width = ((current + 1) / questions.length) * 100 + '%'
+
+    const box = el('q-options')
+    box.innerHTML = ''
+    q.options.forEach((option, i) => {
+      const btn = document.createElement('button')
+      btn.type = 'button'
+      btn.dataset.index = String(i)
+      btn.setAttribute('aria-pressed', 'false')
+      btn.className =
+        'option group flex w-full items-center gap-3.5 rounded-2xl border border-slate-200 bg-white p-4 text-left transition-all hover:border-violet/50 hover:bg-violet/[.04] active:scale-[.995]'
+      btn.innerHTML =
+        '<span class="grid h-8 w-8 shrink-0 place-items-center rounded-xl border border-slate-200 bg-slate-50 font-display text-[14px] font-bold text-slate-500 transition-colors group-aria-pressed:border-violet group-aria-pressed:bg-violet group-aria-pressed:text-white">' +
+        String.fromCharCode(65 + i) +
+        '</span>' +
+        '<span class="text-[14.5px] font-medium leading-snug text-slate-700">' + option + '</span>'
+      btn.addEventListener('click', () => answer(i))
+      box.appendChild(btn)
+    })
+
+    el('q-feedback').classList.add('hidden')
+    const next = el('next-btn')
+    next.disabled = true
+    next.innerHTML = (current === questions.length - 1 ? 'Voir mon résultat' : 'Suivant') +
+      ' <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>'
+  }
+
+  const answer = (index) => {
+    if (locked) return
+    locked = true
+    const q = questions[current]
+    answers[current] = index
+
+    const buttons = [...el('q-options').children]
+    buttons.forEach((btn, i) => {
+      btn.disabled = true
+      if (i === q.correctIndex) {
+        btn.className = 'flex w-full items-center gap-3.5 rounded-2xl border border-emerald-300 bg-emerald-50 p-4 text-left'
+        btn.querySelector('span:first-child').className = 'grid h-8 w-8 shrink-0 place-items-center rounded-xl bg-emerald-500 font-display text-[14px] font-bold text-white'
+      } else if (i === index) {
+        btn.className = 'flex w-full items-center gap-3.5 rounded-2xl border border-rose-300 bg-rose-50 p-4 text-left'
+        btn.querySelector('span:first-child').className = 'grid h-8 w-8 shrink-0 place-items-center rounded-xl bg-rose-500 font-display text-[14px] font-bold text-white'
+      } else {
+        btn.className = 'flex w-full items-center gap-3.5 rounded-2xl border border-slate-200 bg-white p-4 text-left opacity-55'
+      }
+    })
+
+    const correct = index === q.correctIndex
+    const fb = el('q-feedback')
+    fb.className = 'mt-5 rounded-2xl border p-4 ' + (correct ? 'border-emerald-200 bg-emerald-50' : 'border-rose-200 bg-rose-50')
+    el('q-feedback-title').className = 'flex items-center gap-2 text-[14px] font-bold ' + (correct ? 'text-emerald-700' : 'text-rose-700')
+    el('q-feedback-title').innerHTML = (correct ? '✓ Correct !' : '✕ Pas tout à fait') +
+      '<span class="text-[12px] font-medium opacity-70">Réponse : ' + q.options[q.correctIndex] + '</span>'
+    el('q-feedback-text').className = 'mt-1.5 text-[13px] leading-relaxed ' + (correct ? 'text-emerald-800/80' : 'text-rose-800/80')
+    el('q-feedback-text').textContent = q.explanation
+    fb.classList.remove('hidden')
+
+    el('next-btn').disabled = false
+    el('next-btn').focus({ preventScroll: true })
+  }
+
+  /* ---------------------------------------------------------- résultat */
+
+  const finish = () => {
+    clearInterval(timer)
+    const score = answers.reduce((sum, a, i) => sum + (questions[i] && a === questions[i].correctIndex ? 1 : 0), 0)
+    const ratio = score / questions.length
+
+    let title, text, tags
+    if (ratio >= 0.8) {
+      title = 'Profil confirmé — niveau avancé'
+      text = "Vous maîtrisez déjà les bases solides de l'informatique. Les parcours Langage, Données et Architecture vous feront gagner du niveau rapidement."
+      tags = ['Algorithmique', 'Bases de données', 'Réseaux']
+    } else if (ratio >= 0.5) {
+      title = 'Profil intermédiaire — bel élan'
+      text = "Les fondamentaux sont là. Vos lacunes se concentrent sur quelques notions clés : les parcours Développement et Data consolideront vos acquis."
+      tags = ['Web & API', 'Git & outils', 'Structures de données']
+    } else {
+      title = 'Profil débutant — on part des bases'
+      text = "Vous démarrez, et c'est le meilleur moment : les quêtes d'introduction et le parcours Développement Web vous donnera les clés, étape par étape."
+      tags = ['Bases de l\'informatique', 'Premiers algorithmes', 'Premiers code']
+    }
+
+    el('score-value').textContent = String(score)
+    el('result-title').textContent = title
+    el('result-text').textContent = text
+    el('result-tag-1').textContent = tags[0]
+    el('result-tag-2').textContent = tags[1]
+    el('result-tag-3').textContent = tags[2]
+
+    const reco = shuffle(RECOMMENDATIONS).slice(0, 3)
+    el('recommendations').innerHTML = reco.map((r) => `
+      <div class="group rounded-2xl border border-slate-200 bg-white p-4 transition-all hover:-translate-y-0.5 hover:border-violet/40 hover:shadow-card">
+        <span class="grid h-10 w-10 place-items-center rounded-xl bg-gradient-to-br ${r.gradient} font-display text-[17px] font-bold text-white">${r.icon}</span>
+        <p class="mt-3 font-display text-[15.5px] font-bold leading-tight text-slate-900">${r.title}</p>
+        <p class="mt-1 text-[12.5px] leading-snug text-slate-500">${r.desc}</p>
+      </div>`).join('')
+
+    showScreen('result')
+    requestAnimationFrame(() => {
+      el('score-arc').style.strokeDashoffset = String(CIRC * (1 - ratio))
+    })
+  }
+
+  /* ------------------------------------------------------------ events */
+
+  el('start-btn').addEventListener('click', () => {
+    // ⚠️ En production : await fetch('/api/v1/placement/questions?count=10')
+    questions = pickQuestions()
+    answers = []
+    current = 0
+    showScreen('quiz')
+    renderQuestion()
+    startTimer()
+  })
+
+  el('next-btn').addEventListener('click', () => {
+    if (current < questions.length - 1) {
+      current += 1
+      renderQuestion()
+    } else {
+      finish()
+    }
+  })
+
+  el('quit-btn').addEventListener('click', () => {
+    if (confirm('Quitter le test ? Votre progression sera perdue.')) {
+      clearInterval(timer)
+      showScreen('hero')
+    }
+  })
+
+  el('cta-btn').addEventListener('click', () => {
+    // ⚠️ Brancher ici la création de compte / la redirection vers l'espace apprenant.
+    // window.location.href = '/register?level=' + profileSlug
+    alert("Connexion à l'espace apprenant — à brancher sur l'API.")
+  })
+
+  document.addEventListener('keydown', (e) => {
+    if (screens.quiz.classList.contains('hidden')) return
+    if (e.key >= '1' && e.key <= '4') {
+      const btn = el('q-options').children[Number(e.key) - 1]
+      if (btn && !btn.disabled) { btn.click(); e.preventDefault() }
+    } else if (e.key === 'Enter') {
+      const next = el('next-btn')
+      if (!next.disabled) { next.click(); e.preventDefault() }
+    }
+  })
+
+  /* Pré-remplissage du compteur pour la maquette (10 questions). */
+  el('q-total').textContent = String(COUNT)
+})()
+</script>
+</body>
+</html>

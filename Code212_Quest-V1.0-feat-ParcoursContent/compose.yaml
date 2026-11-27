@@ -1,0 +1,87 @@
+name: code212-quest
+
+services:
+  frontend:
+    build:
+      context: ./apps/web
+      dockerfile: Dockerfile
+    ports:
+      - "127.0.0.1:${CODE212_WEB_PORT:-5173}:5173"
+    environment:
+      VITE_USE_MOCK: ${VITE_USE_MOCK:-true}
+      VITE_API_BASE_URL: /api/v1
+      VITE_API_PROXY: http://backend:8000
+    volumes:
+      - ./apps/web:/app
+      - web_node_modules:/app/node_modules
+
+  backend:
+    build:
+      context: ./apps/api
+      dockerfile: Dockerfile
+    command: ["php", "artisan", "serve", "--host=0.0.0.0", "--port=8000"]
+    ports:
+      - "127.0.0.1:${CODE212_API_PORT:-8000}:8000"
+    env_file:
+      - ./apps/api/.env.example
+    environment:
+      APP_ENV: local
+      APP_DEBUG: "true"
+      APP_URL: http://localhost:8000
+      DB_CONNECTION: pgsql
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_DATABASE: code212_quest
+      DB_USERNAME: code212
+      DB_PASSWORD: ${CODE212_DB_PASSWORD:-code212_local_dev}
+      SANCTUM_STATEFUL_DOMAINS: "localhost,localhost:${CODE212_WEB_PORT:-5173}"
+      CORS_ALLOWED_ORIGINS: "http://localhost:${CODE212_WEB_PORT:-5173},http://localhost:3000"
+      CACHE_STORE: redis
+      QUEUE_CONNECTION: redis
+      SESSION_DRIVER: redis
+      REDIS_CLIENT: phpredis
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: null
+    volumes:
+      - ./apps/api:/var/www/html
+      - api_vendor:/var/www/html/vendor
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl --fail --silent http://127.0.0.1:8000/up || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  postgres:
+    image: postgres:18-alpine
+    environment:
+      POSTGRES_DB: code212_quest
+      POSTGRES_USER: code212
+      POSTGRES_PASSWORD: ${CODE212_DB_PASSWORD:-code212_local_dev}
+    volumes:
+      - postgres_data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U code212 -d code212_quest"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+  redis:
+    image: redis:7-alpine
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  api_vendor:
+  postgres_data:
+  web_node_modules:
