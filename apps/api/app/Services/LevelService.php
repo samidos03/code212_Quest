@@ -22,13 +22,16 @@ final class LevelService
     }
 
     /**
-     * XP global total d'un utilisateur (hors XP de voie).
+     * XP global total d'un utilisateur.
+     *
+     * Décision produit (nov. 2026) : les XP de voie gagnés en quête comptent
+     * aussi dans le niveau global. Le total global additionne donc toutes les
+     * écritures du journal ; trackXp() garde le détail par voie.
      */
     public function totalXp(User $user): int
     {
         return (int) XpLedgerEntry::query()
             ->where('user_id', $user->getKey())
-            ->whereNull('track_type')
             ->sum('xp_delta');
     }
 
@@ -54,8 +57,10 @@ final class LevelService
             throw new \RuntimeException('Aucun niveau configure : table levels_config vide.');
         }
 
+        // Les niveaux sont triés par seuil croissant : le niveau atteint est le
+        // dernier dont le seuil est inférieur ou égal au total.
         /** @var Level|null $level */
-        $level = $levels->first(static fn (Level $candidate): bool => $candidate->xp_threshold <= $totalXp);
+        $level = $levels->last(static fn (Level $candidate): bool => $candidate->xp_threshold <= $totalXp);
 
         return $level ?? $levels->first();
     }
