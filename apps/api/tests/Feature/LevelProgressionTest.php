@@ -93,4 +93,19 @@ class LevelProgressionTest extends TestCase
 
         $this->assertSame(2, (int) $user->refresh()->level_no);
     }
+
+    #[Test]
+    public function les_xp_de_voie_comptent_dans_le_niveau_global(): void
+    {
+        $this->seed(\Database\Seeders\TrackSeeder::class);
+        $user = $this->makeUser(['track_code' => 'codeur']);
+
+        $this->ledger->record($user, XpSource::QUEST_STEP_APPROVED, 1, 80, 'codeur');
+        $this->ledger->record($user, XpSource::QUEST_STEP_APPROVED, 2, 40);
+
+        $this->assertSame(80, $this->levels->trackXp($user, 'codeur'));
+        $this->assertSame(120, $this->levels->totalXp($user));
+        $this->assertSame(120, (int) $user->refresh()->xp_total);
+        $this->assertSame(2, (int) $user->level_no);
+    }
 }

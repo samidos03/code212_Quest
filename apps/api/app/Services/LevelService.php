@@ -22,13 +22,16 @@ final class LevelService
     }
 
     /**
-     * XP global total d'un utilisateur (hors XP de voie).
+     * XP global total d'un utilisateur.
+     *
+     * Décision produit (nov. 2026) : les XP de voie gagnés en quête comptent
+     * aussi dans le niveau global. Le total global additionne donc toutes les
+     * écritures du journal ; trackXp() garde le détail par voie.
      */
     public function totalXp(User $user): int
     {
         return (int) XpLedgerEntry::query()
             ->where('user_id', $user->getKey())
-            ->whereNull('track_type')
             ->sum('xp_delta');
     }
 
