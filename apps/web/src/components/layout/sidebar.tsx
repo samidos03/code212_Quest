@@ -1,0 +1,329 @@
+import { NavLink, useNavigate } from 'react-router-dom'
+import { AnimatePresence, motion } from 'framer-motion'
+import { ChevronDown, Crown, Flame, LifeBuoy, LogOut, ShieldAlert, Users, Zap } from 'lucide-react'
+import { Brand } from './brand'
+import {
+  adminNav,
+  administratorNav,
+  directorNav,
+  moderatorNav,
+  studentNav,
+  teamNav,
+  type NavGroup,
+  type NavItem,
+} from '@/lib/navigation'
+import { useWorkspace, type Space } from '@/lib/workspace'
+import { useAuth } from '@/lib/auth'
+import { useStudentIdentity } from '@/lib/student-identity'
+import { useDirectorIdentity } from '@/lib/director-identity'
+import { cn, initials } from '@/lib/utils'
+import { Avatar, AvatarFallback } from '@/components/ui/avatar'
+import { SuperAdminAvatar, SuperAdminRibbon } from '@/components/shared/super-admin-avatar'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
+
+/* ---------------------------------------------------------------- helpers */
+
+const SPACE_NAV: Record<Space, NavGroup[]> = {
+  student: studentNav,
+  director: directorNav,
+  admin: adminNav,
+  administrator: administratorNav,
+  team: teamNav,
+  moderator: moderatorNav,
+}
+
+const SPACE_LABELS: Record<Space, { title: string; sub: string }> = {
+  student:       { title: 'Centre CODE212',    sub: 'Espace apprenant' },
+  director:      { title: 'Directeur',          sub: 'Super Admin · Code212' },
+  admin:         { title: 'Administration',     sub: 'Pilotage du centre' },
+  administrator: { title: 'Administrateur',     sub: 'Gestion globale' },
+  team:          { title: 'Équipe Code212',      sub: 'Formateurs & mentors' },
+  moderator:     { title: 'Modération',          sub: 'Supervision communauté' },
+}
+
+const SPACE_ROOTS: Record<Space, string> = {
+  student: '/',
+  director: '/director',
+  admin: '/admin',
+  administrator: '/administrator',
+  team: '/team',
+  moderator: '/moderator',
+}
+
+/* ---------------------------------------------------------------- NavRow */
+
+function NavRow({ item, onNavigate }: { item: NavItem; onNavigate?: () => void }) {
+  const Icon = item.icon
+  return (
+    <NavLink
+      to={item.to}
+      end={item.to === '/' || item.to === '/admin' || item.to === '/administrator' || item.to === '/team' || item.to === '/moderator'}
+      onClick={onNavigate}
+      className={({ isActive }) =>
+        cn(
+          'group relative flex h-11 items-center gap-3 rounded-xl px-3 text-[13.5px] font-semibold transition-colors',
+          isActive ? 'bg-primary-soft text-primary' : 'text-fg-muted hover:bg-surface-2 hover:text-fg',
+        )
+      }
+    >
+      {({ isActive }) => (
+        <>
+          {isActive && (
+            <motion.span
+              layoutId="nav-indicator"
+              className="absolute left-0 top-1/2 h-6 w-1 -translate-y-1/2 rounded-r-full bg-brand-gradient"
+              transition={{ type: 'spring', stiffness: 420, damping: 34 }}
+            />
+          )}
+          <Icon className={cn('h-[18px] w-[18px] shrink-0 transition-colors', isActive ? 'text-primary' : 'text-fg-subtle group-hover:text-fg')} />
+          <span className="min-w-0 flex-1 truncate">{item.label}</span>
+          {item.badge && (
+            <span
+              className={cn(
+                'rounded-full px-1.5 py-0.5 text-[10px] font-bold tabular-nums',
+                isActive ? 'bg-primary/15 text-primary' : 'bg-surface-3 text-fg-subtle',
+              )}
+            >
+              {item.badge}
+            </span>
+          )}
+        </>
+      )}
+    </NavLink>
+  )
+}
+
+function NavSection({ group, onNavigate }: { group: NavGroup; onNavigate?: () => void }) {
+  return (
+    <div className="mt-6 first:mt-0">
+      <p className="px-3 pb-2 text-[10px] font-bold uppercase tracking-[0.18em] text-fg-subtle">{group.caption}</p>
+      <div className="flex flex-col gap-0.5">
+        {group.items.map((item) => (
+          <NavRow key={item.to + item.label} item={item} onNavigate={onNavigate} />
+        ))}
+      </div>
+    </div>
+  )
+}
+
+/* ---------------------------------------------------------- SidebarContent */
+
+export function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
+  const { space, setSpace } = useWorkspace()
+  const { user, hasRole, isDirector } = useAuth()
+  const navigate = useNavigate()
+  const groups = SPACE_NAV[space]
+  const spaceLabel = SPACE_LABELS[space]
+
+  const switchSpace = (next: Space) => {
+    setSpace(next)
+    navigate(SPACE_ROOTS[next])
+    onNavigate?.()
+  }
+
+  /* Espaces accessibles selon le rôle de l'utilisateur */
+  const availableSpaces: { key: Space; label: string; icon: React.ElementType; color: string }[] = [
+    { key: 'student', label: 'Espace apprenant', icon: Zap, color: 'text-primary' },
+    ...(isDirector ? [{ key: 'director' as Space, label: 'Directeur · Super Admin', icon: Crown, color: 'text-[#b98a20]' }] : []),
+    ...(hasRole('trainer') || hasRole('admin') ? [{ key: 'team' as Space, label: 'Équipe Code212', icon: Users, color: 'text-cyan-fg' }] : []),
+    ...(hasRole('moderator') || hasRole('admin') ? [{ key: 'moderator' as Space, label: 'Modération', icon: ShieldAlert, color: 'text-warning' }] : []),
+    ...(!isDirector && hasRole('admin') ? [{ key: 'administrator' as Space, label: 'Administrateur', icon: LifeBuoy, color: 'text-accent' }] : []),
+  ]
+
+  return (
+    <div className="flex h-full flex-col overflow-y-auto pb-4">
+      <div className="px-5 pb-5 pt-6">
+        <Brand />
+      </div>
+
+      {/* Space switcher */}
+      <div className="px-4">
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button className="flex w-full items-center gap-2.5 rounded-xl border border-border bg-surface-2 px-3 py-2.5 text-left transition-colors hover:border-border-strong">
+              <span className="relative flex h-6 w-6 items-center justify-center rounded-lg bg-brand-gradient text-[10px] font-bold text-white">
+                UCA
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="block truncate text-[11.5px] font-bold uppercase tracking-[0.08em] text-fg">
+                  {spaceLabel.title}
+                </span>
+                <span className="block truncate text-[10px] text-fg-subtle">{spaceLabel.sub}</span>
+              </span>
+              <ChevronDown className="h-3.5 w-3.5 shrink-0 text-fg-subtle" />
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start" className="w-[248px]">
+            <DropdownMenuLabel>Changer d&rsquo;espace</DropdownMenuLabel>
+            {availableSpaces.map((s) => {
+              const Icon = s.icon
+              return (
+                <DropdownMenuItem key={s.key} onSelect={() => switchSpace(s.key)}>
+                  <Icon className={cn('h-4 w-4', s.color)} />
+                  {s.label}
+                  {space === s.key && (
+                    <span className="ml-auto text-[10px] font-semibold text-fg-subtle">actif</span>
+                  )}
+                </DropdownMenuItem>
+              )
+            })}
+            <DropdownMenuSeparator />
+            <DropdownMenuLabel className="normal-case tracking-normal text-[10px] text-fg-subtle">
+              Marrakech · Maroc
+            </DropdownMenuLabel>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
+
+      {/* Nav links */}
+      <nav className="flex-1 px-4 pt-1">
+        {groups.map((group) => (
+          <NavSection key={group.caption} group={group} onNavigate={onNavigate} />
+        ))}
+      </nav>
+
+      {/* Bottom card */}
+      <div className="px-4 pt-4">
+        {space === 'student' ? (
+          <div className="relative overflow-hidden rounded-2xl bg-brand-gradient p-4 text-white shadow-[0_10px_30px_-14px_rgba(103,1,230,.9)]">
+            <div className="absolute -right-6 -top-8 h-24 w-24 rounded-full bg-white/10" />
+            <div className="relative flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.16em] text-white/80">
+              <Flame className="h-3.5 w-3.5" /> Série en cours
+              <span className="ml-auto rounded-full bg-white/20 px-2 py-0.5 text-[11px] font-bold tabular-nums">
+                {user ? '7 J' : '—'}
+              </span>
+            </div>
+            <p className="relative mt-2 font-display text-[17px] font-bold leading-tight">
+              {user ? 'Continuez sur cette lancée !' : 'Connectez-vous pour commencer'}
+            </p>
+          </div>
+        ) : (
+          <div className="rounded-2xl border border-border bg-surface-2 p-4">
+            <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.16em] text-fg-subtle">
+              <LifeBuoy className="h-3.5 w-3.5" /> Documentation
+            </div>
+            <p className="mt-2 text-[12.5px] font-semibold text-fg">{spaceLabel.title}</p>
+            <p className="mt-1 text-[11.5px] leading-snug text-fg-muted">
+              {space === 'moderator' ? 'Guide de modération et politiques du centre.' : 'Règles XP, modération, validation des livrables.'}
+            </p>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
+/* ---------------------------------------------------------- SidebarProfile */
+
+export function SidebarProfile() {
+  const { user, logout, isDirector } = useAuth()
+  const navigate = useNavigate()
+  const { space } = useWorkspace()
+  const { identity: directorIdentity } = useDirectorIdentity()
+  const { identity: studentIdentity } = useStudentIdentity()
+
+  const name = isDirector
+    ? (directorIdentity.nickname || user?.displayName || 'Utilisateur')
+    : (studentIdentity.nickname || user?.displayName || 'Utilisateur')
+  const roleLabel = isDirector
+    ? 'Directeur · Super Admin'
+    : user?.roles.includes('admin')
+    ? 'Administrateur'
+    : user?.roles.includes('trainer')
+    ? 'Formateur · Équipe Code212'
+    : user?.roles.includes('moderator')
+    ? 'Modérateur'
+    : `Niveau ${user?.level ?? '—'}`
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <button className="mt-3 flex w-full items-center gap-3 rounded-xl p-2 text-left transition-colors hover:bg-surface-2">
+          {isDirector ? (
+            <SuperAdminAvatar
+              size={36}
+              className="drop-shadow-[0_4px_12px_rgba(232,184,75,.35)]"
+            />
+          ) : (
+            <Avatar className="h-9 w-9 rounded-xl">
+              <AvatarFallback className="rounded-xl bg-brand-gradient text-white">
+                {initials(name)}
+              </AvatarFallback>
+            </Avatar>
+          )}
+          <span className="min-w-0 flex-1">
+            <span className="block truncate text-[13px] font-semibold text-fg">{name}</span>
+            <span className={cn('block truncate text-[11px]', isDirector ? 'text-[#b98a20] dark:text-[#e8b84b]' : 'text-fg-subtle')}>
+              {roleLabel}
+            </span>
+          </span>
+          {isDirector && (
+            <span
+              className="shrink-0 text-[9px] font-bold uppercase tracking-widest text-[#b98a20] dark:text-[#e8b84b]"
+              title="Super Admin"
+            >
+              ◆
+            </span>
+          )}
+        </button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent side="top" align="start" className="w-[248px]">
+        {isDirector && (
+          <>
+            <div className="flex items-center gap-2.5 px-2 py-2">
+              <SuperAdminAvatar size={32} />
+              <div className="min-w-0">
+                <p className="truncate text-[13px] font-bold text-fg">{name}</p>
+                <SuperAdminRibbon className="mt-0.5" />
+              </div>
+            </div>
+            <DropdownMenuSeparator />
+          </>
+        )}
+        {!isDirector && <DropdownMenuLabel>Espace {SPACE_LABELS[space].title}</DropdownMenuLabel>}
+        <DropdownMenuItem asChild>
+          <NavLink to={isDirector ? "/director/profile" : "/profile"}>Profil &amp; préférences</NavLink>
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem
+          className="text-danger focus:text-danger"
+          onSelect={() => {
+            logout()
+            navigate('/login', { replace: true })
+          }}
+        >
+          <LogOut className="h-4 w-4" />
+          Se déconnecter
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  )
+}
+
+/* ---------------------------------------------------------------- Sidebar */
+
+export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
+  return (
+    <aside className="flex h-full w-[268px] shrink-0 flex-col border-r border-border bg-surface">
+      <SidebarContent onNavigate={onNavigate} />
+      <div className="px-4">
+        <SidebarProfile />
+      </div>
+    </aside>
+  )
+}
+
+export function SidebarFallback() {
+  return (
+    <AnimatePresence>
+      <div />
+    </AnimatePresence>
+  )
+}

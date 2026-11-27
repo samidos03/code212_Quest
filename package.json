@@ -1,0 +1,14 @@
+{
+  "name": "code212-quest",
+  "private": true,
+  "version": "0.6.0",
+  "description": "Plateforme de gamification pédagogique — Centre CODE212, Université Cadi Ayyad",
+  "workspaces": ["apps/web"],
+  "scripts": {
+    "dev": "npm run dev --workspace @code212/web",
+    "build": "npm run build --workspace @code212/web",
+    "preview": "npm run preview --workspace @code212/web",
+    "typecheck": "npm run typecheck --workspace @code212/web"
+  },
+  "engines": { "node": ">=20" }
+}

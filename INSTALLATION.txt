@@ -1,0 +1,3 @@
+Patch visuel La Forge : cartes biseautees, badges sans fond, XP / Gems / Messages.
+Depuis la racine du projet : unzip -o ~/Downloads/code212-forge-cartes-biseautees-patch.zip -d .
+Puis : cd apps/web && npm run build
