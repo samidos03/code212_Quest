@@ -28,9 +28,14 @@ export function useEnrollQuest() {
 export function useSubmitStep(questId: number) {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: (payload: { stepId: number; content: string }) => api.submitStep(questId, payload.stepId, payload.content),
+    mutationFn: (payload: { stepId: number; content: string; notes?: string }) =>
+      api.submitStep(questId, payload.stepId, payload.content, payload.notes),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['quest', questId] })
+      // Le module et le parcours reflètent l'état « en attente » renvoyé par l'API.
+      qc.invalidateQueries({ queryKey: ['path'] })
+      qc.invalidateQueries({ queryKey: ['paths'] })
+      qc.invalidateQueries({ queryKey: ['admin', 'submissions'] })
       qc.invalidateQueries({ queryKey: ['ledger'] })
       qc.invalidateQueries({ queryKey: ['me'] })
     },

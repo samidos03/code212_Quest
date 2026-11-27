@@ -323,10 +323,13 @@ export const api = {
     return adaptQuest(extractData(payload))
   },
   enrollQuest: (id: number) => (USE_MOCK ? mockApi.enrollQuest(id) : http.post<import('@/types').Quest>(`/quests/${id}/enroll`)),
-  submitStep: (questId: number, stepId: number, content: string) =>
+  submitStep: (questId: number, stepId: number, content: string, notes?: string) =>
     USE_MOCK
       ? mockApi.submitStep(questId, stepId, content)
-      : http.post<{ status: string; xpAwarded: number }>(`/quests/${questId}/steps/${stepId}/submit`, { content }),
+      : http.post<{ status: string; xpAwarded: number }>(
+          `/quests/${questId}/steps/${stepId}/submit`,
+          notes ? { content, commentaire: notes } : { content },
+        ),
 
   // progression
   ledger: () => (USE_MOCK ? mockApi.getLedger() : http.get<import('@/types').LedgerEntry[]>('/ledger')),

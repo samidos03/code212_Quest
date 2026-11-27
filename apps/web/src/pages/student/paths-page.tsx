@@ -848,14 +848,22 @@ function FinalQuestCard({
       {
         stepId: quest.stepId,
         content: deliverable.trim(),
+        notes: notes.trim() || undefined,
       },
       {
         onSuccess: () => {
+          setDeliverable('')
+          setNotes('')
           toast('Livrable envoyé', {
             description: 'Votre livrable a été déposé et attend la correction d’un formateur.',
             kind: 'success',
           })
         },
+        onError: (error) =>
+          toast('Dépôt refusé', {
+            description: error instanceof Error ? error.message : 'Réessayez dans un instant.',
+            kind: 'error',
+          }),
       }
     )
   }
