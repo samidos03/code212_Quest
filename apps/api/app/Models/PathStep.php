@@ -28,6 +28,7 @@ class PathStep extends Model
         'kind',
         'ref_type',
         'ref_id',
+        'quest_id',
         'order_index',
         'xp_reward',
     ];
@@ -37,11 +38,22 @@ class PathStep extends Model
         return [
             'order_index' => 'integer',
             'xp_reward' => 'integer',
+            'quest_id' => 'integer',
         ];
     }
 
     public function learningPath(): BelongsTo
     {
         return $this->belongsTo(LearningPath::class);
+    }
+
+    public function quest(): BelongsTo
+    {
+        return $this->belongsTo(Quest::class, 'quest_id');
+    }
+
+    public function lessons(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(ModuleLesson::class, 'path_step_id')->orderBy('order_index');
     }
 }

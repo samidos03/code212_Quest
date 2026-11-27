@@ -51,6 +51,11 @@ class LearningPath extends Model
         return $this->hasMany(PathStep::class)->orderBy('order_index');
     }
 
+    public function enrollments(): HasMany
+    {
+        return $this->hasMany(LearningPathEnrollment::class);
+    }
+
     public function track(): BelongsTo
     {
         return $this->belongsTo(ProgressionTrack::class, 'track_code', 'code');

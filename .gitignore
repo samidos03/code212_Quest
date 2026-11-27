@@ -5,7 +5,6 @@ dist/
 .env.*.local
 .DS_Store
 *.log
-
 # Laravel
 apps/api/vendor/
 apps/api/.env
@@ -32,3 +31,7 @@ build/
 *.dump
 *.backup-*
 *.avant-restauration
+
+# Fichiers générés localement
+*.tsbuildinfo
+apps/api/public/storage

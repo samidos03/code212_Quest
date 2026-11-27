@@ -32,6 +32,7 @@ class QuestSubmission extends Model
         'content',
         'notes',
         'status',
+        'attempt_number',
         'idempotency_key',
         'content_hash',
         'submitted_at',
@@ -46,6 +47,7 @@ class QuestSubmission extends Model
         return [
             'content' => 'array',
             'status' => SubmissionStatus::class,
+            'attempt_number' => 'integer',
             'submitted_at' => 'datetime',
             'reviewed_at' => 'datetime',
             'xp_awarded' => 'integer',

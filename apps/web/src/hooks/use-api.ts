@@ -46,6 +46,43 @@ export const useLevels = () => useQuery({ queryKey: ['levels'], queryFn: api.lev
 export const useTracks = () => useQuery({ queryKey: ['tracks'], queryFn: api.tracks })
 export const useBadges = () => useQuery({ queryKey: ['badges'], queryFn: api.badges })
 export const usePaths = () => useQuery({ queryKey: ['paths'], queryFn: api.paths })
+export const usePath = (id: number) =>
+  useQuery({
+    queryKey: ['path', id],
+    queryFn: () => api.path(id),
+    enabled: Number.isInteger(id) && id > 0,
+  })
+export const useModuleDetail = (pathId: number, stepId: number) =>
+  useQuery({
+    queryKey: ['path', pathId, 'module', stepId],
+    queryFn: () => api.moduleDetail(pathId, stepId),
+    enabled: pathId > 0 && stepId > 0,
+  })
+export function useEnrollPath() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (pathId: number) => api.enrollPath(pathId),
+    onSuccess: (_, pathId) => {
+      qc.invalidateQueries({ queryKey: ['paths'] })
+      qc.invalidateQueries({ queryKey: ['path', pathId] })
+      qc.invalidateQueries({ queryKey: ['dashboard'] })
+    },
+  })
+}
+export function useSubmitExercise() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (payload: { exerciseId: number; answer: string; pathId?: number; stepId?: number }) =>
+      api.submitExercise(payload.exerciseId, payload.answer),
+    onSuccess: (_, variables) => {
+      if (variables.pathId && variables.stepId) {
+        qc.invalidateQueries({ queryKey: ['path', variables.pathId, 'module', variables.stepId] })
+        qc.invalidateQueries({ queryKey: ['path', variables.pathId] })
+      }
+      qc.invalidateQueries({ queryKey: ['paths'] })
+    },
+  })
+}
 export const useMissions = () => useQuery({ queryKey: ['missions'], queryFn: api.missions })
 export const useCertifications = () => useQuery({ queryKey: ['certifications'], queryFn: api.certifications })
 export const useRewards = () => useQuery({ queryKey: ['rewards'], queryFn: api.rewards })

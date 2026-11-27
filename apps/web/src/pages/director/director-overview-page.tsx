@@ -9,7 +9,6 @@ import {
   ScrollText,
   ShieldAlert,
   ShieldCheck,
-  ShoppingBag,
   TrendingUp,
   Users,
   Zap,

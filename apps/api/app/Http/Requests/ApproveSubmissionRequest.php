@@ -24,7 +24,18 @@ class ApproveSubmissionRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'decision' => ['nullable', Rule::in([SubmissionStatus::Approved->value, SubmissionStatus::Rejected->value])],
+            'decision' => ['nullable', 'string', Rule::in([
+                'approve',
+                'reject',
+                'validee',
+                'rejetee',
+                'approuvee',
+                'a_revoir',
+                'revoir',
+                SubmissionStatus::Approved->value,
+                SubmissionStatus::Rejected->value,
+                SubmissionStatus::NeedsReview->value,
+            ])],
             'feedback' => ['nullable', 'string', 'max:5000'],
         ];
     }

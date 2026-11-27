@@ -129,12 +129,17 @@ class User extends Authenticatable
 
     public function forgeThreads(): HasMany
     {
-        return $this->hasMany(ForgeThread::class);
+        return $this->hasMany(ForgeThread::class, 'author_id');
     }
 
     public function forgeSolutions(): HasMany
     {
-        return $this->hasMany(ForgeSolution::class);
+        return $this->hasMany(ForgeSolution::class, 'author_id');
+    }
+
+    public function pathEnrollments(): HasMany
+    {
+        return $this->hasMany(LearningPathEnrollment::class);
     }
 
     public function roleApplications(): HasMany
