@@ -56,12 +56,12 @@ class ForgeThread extends Model
 
     public function solutions(): HasMany
     {
-        return $this->hasMany(ForgeSolution::class)->orderBy('created_at');
+        return $this->hasMany(ForgeSolution::class, 'thread_id')->orderBy('created_at');
     }
 
     public function reports(): HasMany
     {
-        return $this->hasMany(ForgeReport::class);
+        return $this->hasMany(ForgeReport::class, 'thread_id');
     }
 
     public function acceptedSolution(): BelongsTo

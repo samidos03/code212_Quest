@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 /**
  * Signalement d'un fil ou d'une solution de la Forge.
@@ -23,6 +24,12 @@ class ReportRequest extends FormRequest
     {
         return [
             'raison' => ['required', 'string', 'min:10', 'max:2000'],
+            // Une solution signalée doit appartenir au fil de l'URL.
+            'solution_id' => [
+                'nullable',
+                'integer',
+                Rule::exists('forge_solutions', 'id')->where('thread_id', $this->route('thread')?->getKey()),
+            ],
         ];
     }
 }

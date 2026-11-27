@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { ArrowLeft, CheckCircle2, Flag, Send, ThumbsUp } from 'lucide-react'
-import { useAcceptSolution, useForgeThread, useLikeThread, useReplyToThread, useReportThread } from '@/hooks/use-api'
+import { ArrowLeft, CheckCircle2, Flag, Send } from 'lucide-react'
+import { useAcceptSolution, useForgeThread, useReplyToThread } from '@/hooks/use-api'
+import { useAuth } from '@/lib/auth'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Textarea } from '@/components/ui/input'
@@ -9,18 +10,30 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { useToast } from '@/components/ui/toast'
 import { cn, formatRelative } from '@/lib/utils'
 import { ForgeAuthorCard } from '@/components/forge/forge-author-card'
+import { ForgeReportDialog } from '@/components/forge/report-dialog'
 
 export function ForgeThreadPage() {
   const { id } = useParams()
   const threadId = Number(id)
   const navigate = useNavigate()
   const { toast } = useToast()
-  const { data, isLoading } = useForgeThread(threadId)
+  const { data, isLoading, isError, error } = useForgeThread(threadId)
+  // Session connectée (même source que l'en-tête) : id et rôles normalisés.
+  const { user: me } = useAuth()
   const reply = useReplyToThread(threadId)
   const accept = useAcceptSolution(threadId)
-  const like = useLikeThread()
-  const report = useReportThread()
   const [body, setBody] = useState('')
+  const [reportTarget, setReportTarget] = useState<{ solutionId?: number; label: string } | null>(null)
+
+  if (isError) {
+    return (
+      <div className="panel p-8 text-center">
+        <p className="font-display text-[17px] font-bold text-fg">Discussion indisponible</p>
+        <p className="mt-1 text-[13px] text-fg-muted">{error instanceof Error ? error.message : 'Erreur inconnue.'}</p>
+        <Button className="mt-4" variant="outline" onClick={() => navigate('/forge')}>Retour à La Forge</Button>
+      </div>
+    )
+  }
 
   if (isLoading || !data) {
     return (
@@ -33,6 +46,9 @@ export function ForgeThreadPage() {
   }
 
   const { thread, solutions } = data
+  // Seul le demandeur (ou un formateur/modérateur) choisit la solution ; l'API le vérifie aussi.
+  const isStaff = Boolean(me?.roles?.some((role) => role === 'trainer' || role === 'moderator' || role === 'admin'))
+  const canAccept = !thread.solved && (isStaff || (me != null && Number(me.id) === thread.authorId))
 
   return (
     <div className="space-y-5">
@@ -65,29 +81,7 @@ export function ForgeThreadPage() {
         <p className="mt-4 whitespace-pre-line [overflow-wrap:anywhere] text-[14px] leading-relaxed text-fg-muted">{thread.body}</p>
 
         <div className="mt-5 flex flex-wrap items-center gap-2 border-t border-border pt-4">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() =>
-              like.mutate(thread.id, {
-                onSuccess: (result) => toast(result.liked ? 'Vote compté' : 'Vote retiré', { description: '+5 XP Aidant pour un vote utile.' }),
-              })
-            }
-            loading={like.isPending}
-          >
-            <ThumbsUp className={cn('h-3.5 w-3.5', thread.liked && 'fill-primary text-primary')} /> {thread.likes}
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() =>
-              report.mutate(
-                { id: thread.id, reason: 'Signalement depuis l’interface' },
-                { onSuccess: () => toast('Signalement transmis', { description: 'La modération de la rubrique va examiner le message.', kind: 'info' }) },
-              )
-            }
-            loading={report.isPending}
-          >
+          <Button variant="ghost" size="sm" onClick={() => setReportTarget({ label: 'la discussion' })}>
             <Flag className="h-3.5 w-3.5" /> Signaler
           </Button>
         </div>
@@ -120,7 +114,7 @@ export function ForgeThreadPage() {
                           <CheckCircle2 className="h-3 w-3" /> Solution acceptée
                         </Badge>
                       )}
-                      {!solution.accepted && !solution.mine && (
+                      {!solution.accepted && canAccept && solution.authorId !== Number(me?.id) && (
                         <Button
                           size="sm"
                           variant="outline"
@@ -140,10 +134,14 @@ export function ForgeThreadPage() {
                   <p className="mt-3 whitespace-pre-line [overflow-wrap:anywhere] text-[13.5px] leading-relaxed text-fg-muted">{solution.body}</p>
 
                   <div className="mt-3.5 flex items-center gap-4 text-[11.5px] text-fg-subtle">
-                    <span className="inline-flex items-center gap-1">
-                      <ThumbsUp className="h-3.5 w-3.5" /> {solution.likes}
-                    </span>
                     {solution.acceptedAt && <span>Acceptée {formatRelative(solution.acceptedAt)}</span>}
+                    <button
+                      type="button"
+                      className="inline-flex items-center gap-1 hover:text-primary"
+                      onClick={() => setReportTarget({ solutionId: solution.id, label: 'cette réponse' })}
+                    >
+                      <Flag className="h-3.5 w-3.5" /> Signaler
+                    </button>
                   </div>
                 </div>
               </div>
@@ -155,20 +153,21 @@ export function ForgeThreadPage() {
       <section className="panel p-5">
         <h2 className="font-display text-[17px] font-bold text-fg">Répondre</h2>
         <p className="mt-1 text-[12.5px] text-fg-muted">
-          Une réponse acceptée rapporte 40 XP, et 120 XP supplémentaires si elle est validée comme solution.
+          L’entraide reste communautaire : seule une réponse acceptée par l’auteur de la question est récompensée, dans la limite des quotas. Elle ne remplace pas la validation d’une quête par un formateur.
         </p>
         <Textarea
           className="mt-3"
           rows={5}
           value={body}
           onChange={(e) => setBody(e.target.value)}
-          placeholder="Partagez une réponse claire, avec un exemple de code si possible…"
+          placeholder="Expliquez la cause, proposez le correctif (avec un extrait de code) et comment vérifier que ça marche."
+          disabled={thread.closed}
         />
         <div className="mt-3 flex justify-end">
           <Button
             onClick={() => {
-              if (body.trim().length < 30) {
-                toast('Réponse trop courte', { description: '30 caractères minimum pour une réponse utile.', kind: 'error' })
+              if (body.trim().length < 20) {
+                toast('Réponse trop courte', { description: '20 caractères minimum pour une réponse utile.', kind: 'error' })
                 return
               }
               reply.mutate(body.trim(), {
@@ -186,11 +185,20 @@ export function ForgeThreadPage() {
               })
             }}
             loading={reply.isPending}
+            disabled={thread.closed}
           >
             <Send className="h-4 w-4" /> Publier ma réponse
           </Button>
         </div>
       </section>
+      {reportTarget && (
+        <ForgeReportDialog
+          threadId={thread.id}
+          solutionId={reportTarget.solutionId}
+          label={reportTarget.label}
+          onClose={() => setReportTarget(null)}
+        />
+      )}
     </div>
   )
 }

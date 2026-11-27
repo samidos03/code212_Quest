@@ -82,7 +82,7 @@ function forgeThread(raw: ForgeRaw, cats: ForgeRaw[] = []): import('@/types').Fo
     authorRole: 'student', createdAt: String(raw.cree_le ?? new Date().toISOString()),
     replies: Number(raw.nb_solutions ?? 0), views: Number(raw.vue ?? 0), likes: 0, liked: false,
     solved: raw.statut === 'resolue', tags: Array.isArray(raw.tags) ? raw.tags : [],
-    solutionIds: [], closed: raw.statut === 'fermee', pinned: Boolean(raw.epingle),
+    solutionIds: [], closed: raw.statut === 'verrouillee' || raw.statut === 'masquee', pinned: Boolean(raw.epingle),
     author: { pseudonym },
   }
 }
@@ -91,7 +91,8 @@ function forgeSolution(raw: ForgeRaw): import('@/types').ForgeSolution {
   const pseudonym = String(author.pseudonyme ?? 'Membre CODE212')
   return {
     id: Number(raw.id), threadId: Number(raw.fil_id), authorId: Number(author.id ?? 0),
-    authorName: pseudonym, authorPseudonym: pseudonym, body: String(raw.contenu ?? ''),
+    authorName: pseudonym, authorPseudonym: pseudonym,
+    body: raw.code ? `${String(raw.contenu ?? '')}\n\n${String(raw.code)}` : String(raw.contenu ?? ''),
     accepted: Boolean(raw.acceptee), acceptedAt: raw.acceptee_le ?? undefined,
     createdAt: String(raw.cree_le ?? new Date().toISOString()), likes: Number(raw.votes ?? 0),
     mine: false, author: { pseudonym },
@@ -414,10 +415,12 @@ export const api = {
   },
   acceptSolution: (threadId: number, solutionId: number) =>
     USE_MOCK ? mockApi.acceptSolution(threadId, solutionId) : http.post<import('@/types').ForgeSolution>(`/forge/solutions/${solutionId}/accept`),
-  toggleLikeThread: (id: number) =>
-    USE_MOCK ? mockApi.toggleLikeThread(id) : Promise.reject(new ApiError('Les votes de sujet ne sont pas disponibles dans cette API Laravel.', 501)),
-  reportThread: (threadId: number, reason: string) =>
-    USE_MOCK ? mockApi.reportThread(threadId, reason) : http.post(`/forge/threads/${threadId}/report`, { raison: reason }),
+  // Vote de la Forge reporté tant que le seuil de niveau n'est pas tranché :
+  // aucune action de vote n'est exposée dans l'interface.
+  reportThread: (threadId: number, reason: string, solutionId?: number) =>
+    USE_MOCK
+      ? mockApi.reportThread(threadId, reason)
+      : http.post(`/forge/threads/${threadId}/report`, solutionId ? { raison: reason, solution_id: solutionId } : { raison: reason }),
 
   // administration
   adminOverview: () => (USE_MOCK ? mockApi.getAdminOverview() : http.get<import('@/types').AdminOverview>('/admin/analytics')),

@@ -44,6 +44,20 @@ final class ForgeRewardService
             throw new BusinessRuleException('Cette solution a deja ete acceptee.', [], 409);
         }
 
+        // Seul le demandeur (auteur du fil) ou un formateur/modérateur choisit la solution.
+        if ((int) $thread->author_id !== (int) $requester->getKey() && ! $requester->isTrainer()) {
+            throw new BusinessRuleException(
+                'Seul l auteur de la question ou un formateur peut accepter une solution.',
+                [],
+                403
+            );
+        }
+
+        $threadStatus = $thread->status instanceof ForgeThreadStatus ? $thread->status : ForgeThreadStatus::tryFrom((string) $thread->status);
+        if ($threadStatus === ForgeThreadStatus::Resolved) {
+            throw new BusinessRuleException('Ce fil a deja une solution acceptee.', [], 409);
+        }
+
         if ((int) $solution->author_id === (int) $requester->getKey()) {
             throw new BusinessRuleException(
                 'Auto-validation interdite : l auteur d une solution ne peut pas la recompenser.',

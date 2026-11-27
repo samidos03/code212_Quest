@@ -162,19 +162,11 @@ export function useAcceptSolution(threadId: number) {
   })
 }
 
-export function useLikeThread() {
-  const qc = useQueryClient()
-  return useMutation({
-    mutationFn: (id: number) => api.toggleLikeThread(id),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['forge'] })
-      qc.invalidateQueries({ queryKey: ['me'] })
-    },
-  })
-}
 
 export function useReportThread() {
-  return useMutation({ mutationFn: ({ id, reason }: { id: number; reason: string }) => api.reportThread(id, reason) })
+  return useMutation({
+    mutationFn: ({ id, reason, solutionId }: { id: number; reason: string; solutionId?: number }) => api.reportThread(id, reason, solutionId),
+  })
 }
 
 /* ------------------------------------------------------------------ profil */

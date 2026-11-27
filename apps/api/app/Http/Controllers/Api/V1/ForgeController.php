@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Api\V1;
 
 use App\Enums\ForgeReportStatus;
+use App\Enums\ForgeThreadStatus;
 use App\Exceptions\BusinessRuleException;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\AcceptSolutionRequest;
@@ -119,12 +120,23 @@ class ForgeController extends Controller
     {
         $this->assertNotBanned($request->user(), $thread->category);
 
+        $status = $thread->status instanceof ForgeThreadStatus ? $thread->status : ForgeThreadStatus::tryFrom((string) $thread->status);
+        if (in_array($status, [ForgeThreadStatus::Locked, ForgeThreadStatus::Hidden], true)) {
+            throw new BusinessRuleException('Ce fil est ferme aux nouvelles reponses.', [], 409);
+        }
+
         $solution = ForgeSolution::create([
             'thread_id' => $thread->getKey(),
             'author_id' => $request->user()->getKey(),
             'body' => (string) $request->input('contenu'),
             'code_snippet' => $request->input('code'),
         ]);
+
+        if (Schema::hasTable('audit_logs')) {
+            $this->audit->log($request->user(), 'forge.reply_created', 'forge_solution', $solution->getKey(), null, [
+                'thread_id' => $thread->getKey(),
+            ]);
+        }
 
         return ApiResponse::resource(new ForgeSolutionResource($solution->load('author')), 201);
     }
@@ -147,6 +159,21 @@ class ForgeController extends Controller
     public function report(ForgeThread $thread, ReportRequest $request): JsonResponse
     {
         $solutionId = $request->input('solution_id');
+
+        // Un même membre ne signale qu'une fois un contenu tant que le signalement est ouvert.
+        $alreadyOpen = ForgeReport::query()
+            ->where('reporter_id', $request->user()->getKey())
+            ->where('status', ForgeReportStatus::Open->value)
+            ->when(
+                $solutionId !== null,
+                static fn ($q) => $q->where('solution_id', (int) $solutionId),
+                static fn ($q) => $q->where('thread_id', $thread->getKey())->whereNull('solution_id'),
+            )
+            ->exists();
+
+        if ($alreadyOpen) {
+            throw new BusinessRuleException('Vous avez deja signale ce contenu ; la moderation l examine.', [], 409);
+        }
 
         $report = ForgeReport::create([
             'thread_id' => $solutionId !== null ? null : $thread->getKey(),

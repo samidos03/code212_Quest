@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { CheckCircle2, Eye, Flag, Lock, MessageSquare, Pin, Plus, Search, Send, ShieldCheck } from 'lucide-react'
-import { useCreateThread, useForgeCategories, useForgeThreads, useMe, useReplyToThread, useReportThread } from '@/hooks/use-api'
+import { useCreateThread, useForgeCategories, useForgeThreads, useReplyToThread } from '@/hooks/use-api'
+import { useAuth } from '@/lib/auth'
+import { ForgeReportDialog } from '@/components/forge/report-dialog'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input, Label, Textarea } from '@/components/ui/input'
@@ -11,6 +13,8 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { useToast } from '@/components/ui/toast'
 import { cn, formatRelative, initials } from '@/lib/utils'
 import type { ForgeCategorySlug, ForgeThread } from '@/types'
+
+const QUESTION_TEMPLATE = 'Contexte :\n\nCode ou extrait :\n\nRésultat attendu / obtenu :\n\nDéjà essayé :\n'
 
 function authorColor(thread: ForgeThread) {
   const identity = thread.author
@@ -66,7 +70,7 @@ function QuickReply({ thread, onClose }: { thread: ForgeThread; onClose: () => v
   const [preview, setPreview] = useState(false)
   useEffect(() => { try { localStorage.setItem(key, body) } catch { /* Storage may be unavailable */ } }, [body, key])
   const send = () => {
-    if (body.trim().length < 30) { toast('Réponse trop courte', { description: '30 caractères minimum.', kind: 'error' }); return }
+    if (body.trim().length < 20) { toast('Réponse trop courte', { description: '20 caractères minimum.', kind: 'error' }); return }
     reply.mutate(body.trim(), { onSuccess: () => { try { localStorage.removeItem(key) } catch { /* ignore */ } toast('Réponse publiée'); onClose() }, onError: (error) => toast('Envoi impossible', { kind: 'error', description: error instanceof Error ? error.message : 'Erreur inconnue' }) })
   }
   return <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-3 sm:items-center" role="presentation" onMouseDown={event => { if (event.target === event.currentTarget) onClose() }}>
@@ -80,35 +84,24 @@ function QuickReply({ thread, onClose }: { thread: ForgeThread; onClose: () => v
   </div>
 }
 
-function ReportDialog({ thread, onClose }: { thread: ForgeThread; onClose: () => void }) {
-  const report = useReportThread()
-  const { toast } = useToast()
-  const [reason, setReason] = useState('Contenu inapproprié')
-  const [details, setDetails] = useState('')
-  return <Dialog open onOpenChange={open => { if (!open) onClose() }}><DialogContent><DialogHeader><DialogTitle>Signaler une discussion</DialogTitle><DialogDescription>Le signalement sera envoyé à la modération.</DialogDescription></DialogHeader>
-    <div className="space-y-3"><Label>Motif</Label><Select value={reason} onValueChange={setReason}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{['Contenu inapproprié', 'Harcèlement', 'Spam', 'Hors sujet', 'Autre'].map(item => <SelectItem key={item} value={item}>{item}</SelectItem>)}</SelectContent></Select><Label htmlFor="forge-report-details">Précisions (facultatif)</Label><Textarea id="forge-report-details" value={details} onChange={event => setDetails(event.target.value)} /></div>
-    <DialogFooter><Button variant="ghost" onClick={onClose}>Annuler</Button><Button loading={report.isPending} onClick={() => report.mutate({ id: thread.id, reason: `${reason}${details.trim() ? ` : ${details.trim()}` : ''}` }, { onSuccess: () => { toast('Signalement transmis'); onClose() }, onError: () => toast('Signalement impossible', { kind: 'error' }) })}>Envoyer le signalement</Button></DialogFooter>
-  </DialogContent></Dialog>
-}
-
 export function ForgePage() {
-  const { data: me } = useMe()
+  const { user: me } = useAuth()
   const [quickReply, setQuickReply] = useState<ForgeThread | null>(null)
   const [reportTarget, setReportTarget] = useState<ForgeThread | null>(null)
   const canModerate = Boolean(me?.roles?.some(role => role === 'moderator' || role === 'admin'))
   const [category, setCategory] = useState<ForgeCategorySlug | 'all'>('all'); const [search, setSearch] = useState(''); const [moderator, setModerator] = useState(false)
   const { data: categories } = useForgeCategories(); const { data: threads, isLoading } = useForgeThreads(category === 'all' ? undefined : category)
-  const create = useCreateThread(); const { toast } = useToast(); const [open, setOpen] = useState(false); const [title, setTitle] = useState(''); const [body, setBody] = useState(''); const [tags, setTags] = useState(''); const [newCategory, setNewCategory] = useState<ForgeCategorySlug>('entraide')
+  const create = useCreateThread(); const { toast } = useToast(); const [open, setOpen] = useState(false); const [title, setTitle] = useState(''); const [body, setBody] = useState(QUESTION_TEMPLATE); const [tags, setTags] = useState(''); const [newCategory, setNewCategory] = useState<ForgeCategorySlug>('entraide')
   const visible = useMemo(() => (threads ?? []).filter((thread) => `${thread.title} ${thread.tags.join(' ')}`.toLowerCase().includes(search.toLowerCase())), [threads, search])
-  const publish = () => { if (title.trim().length < 10 || body.trim().length < 30) return toast('Message incomplet', { description: 'Titre (10 caractères min.) et description (30 caractères min.) sont requis.', kind: 'error' }); create.mutate({ category: newCategory, title: title.trim(), body: body.trim(), tags: tags.split(',').map((tag) => tag.trim()).filter(Boolean) }, { onSuccess: () => { setOpen(false); setTitle(''); setBody(''); setTags(''); toast('Question publiée', { description: 'Votre fil apparaît dans la rubrique.' }) }, onError: (error) => toast('Publication impossible', { kind: 'error', description: error instanceof Error ? error.message : 'Erreur inconnue' }) }) }
+  const publish = () => { if (title.trim().length < 8 || body.trim().length < 20 || body.trim() === QUESTION_TEMPLATE.trim()) return toast('Message incomplet', { description: 'Titre (8 caractères min.) et description (20 caractères min.) sont requis.', kind: 'error' }); create.mutate({ category: newCategory, title: title.trim(), body: body.trim(), tags: tags.split(',').map((tag) => tag.trim()).filter(Boolean) }, { onSuccess: () => { setOpen(false); setTitle(''); setBody(QUESTION_TEMPLATE); setTags(''); toast('Question publiée', { description: 'Votre fil apparaît dans la rubrique.' }) }, onError: (error) => toast('Publication impossible', { kind: 'error', description: error instanceof Error ? error.message : 'Erreur inconnue' }) }) }
   return <div className="space-y-5">
     <header className="relative overflow-hidden rounded-2xl border border-primary/20 bg-surface px-5 py-6 shadow-card sm:px-7"><div className="art-grid absolute inset-0 opacity-[.22]" /><div className="relative flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between"><div><p className="kicker text-primary">Communauté · entraide & projets</p><h1 className="mt-1 font-display text-[32px] font-bold text-fg sm:text-[38px]">La Forge</h1><p className="mt-2 max-w-2xl text-[13.5px] leading-relaxed text-fg-muted">Le forum des apprentis qui construisent, déboguent et transmettent. Chaque réponse utile fait progresser la communauté.</p></div><div className="flex flex-wrap gap-2">{canModerate && <Button variant={moderator ? 'soft' : 'outline'} size="sm" onClick={() => setModerator(!moderator)}><ShieldCheck className="h-4 w-4" /> {moderator ? 'Vue modérateur' : 'Vue étudiant'}</Button>}<Button onClick={() => setOpen(true)}><Plus className="h-4 w-4" /> Poser une question</Button></div></div></header>
-    {moderator && canModerate && <section className="border border-accent/25 bg-accent-soft/30 p-4"><div className="flex items-center justify-between"><div><p className="kicker text-accent">File de modération</p><p className="mt-1 font-display font-bold text-fg">File de modération</p></div><Button size="sm" variant="outline" onClick={() => toast('File ouverte', { description: 'Consultez la console de modération pour gérer les signalements.' })}>Voir la file</Button></div></section>}
+    {moderator && canModerate && <section className="border border-accent/25 bg-accent-soft/30 p-4"><div className="flex items-center justify-between"><div><p className="kicker text-accent">File de modération</p><p className="mt-1 font-display font-bold text-fg">File de modération</p></div><span className="text-[12px] text-fg-muted">Traitement des signalements : pas encore branché sur l’API.</span></div></section>}
     <div className="flex flex-col gap-3 sm:flex-row"><div className="relative flex-1"><Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-fg-subtle" /><Input value={search} onChange={(event) => setSearch(event.target.value)} className="pl-9" placeholder="Rechercher dans La Forge…" /></div><p className="self-center text-[12px] text-fg-subtle">{visible.length} discussions</p></div>
     <nav aria-label="Rubriques" className="no-scrollbar -mx-1 flex gap-2 overflow-x-auto px-1"><button onClick={() => setCategory('all')} className={cn('shrink-0 border px-3 py-2 text-[12px] font-semibold', category === 'all' ? 'border-primary/30 bg-primary-soft text-primary' : 'border-border bg-surface text-fg-muted')}>Toutes</button>{(categories ?? []).map((cat) => <button key={cat.slug} onClick={() => setCategory(cat.slug)} className={cn('shrink-0 border px-3 py-2 text-[12px] font-semibold', category === cat.slug ? 'border-primary/30 bg-primary-soft text-primary' : 'border-border bg-surface text-fg-muted')}>{cat.icon} {cat.name} <span className="ml-1 text-fg-subtle">{cat.threads}</span></button>)}</nav>
     {isLoading ? <div className="space-y-2">{[0, 1, 2, 3].map((item) => <Skeleton key={item} className="h-36 rounded-xl" />)}</div> : <section aria-label="Discussions de La Forge" className="space-y-2.5">{[...visible].sort((a, b) => Number(Boolean(b.pinned)) - Number(Boolean(a.pinned))).map((thread) => <ForgeDiscussionCard key={thread.id} thread={thread} onReply={setQuickReply} onReport={setReportTarget} />)}{!visible.length && <div className="rounded-xl border border-border bg-surface p-14 text-center"><MessageSquare className="mx-auto h-6 w-6 text-fg-subtle" /><p className="mt-3 font-display font-bold">Aucune discussion trouvée</p><p className="mt-1 text-sm text-fg-muted">Essayez un autre mot-clé ou lancez le sujet.</p></div>}</section>}
     {quickReply && <QuickReply key={quickReply.id} thread={quickReply} onClose={() => setQuickReply(null)} />}
-    {reportTarget && <ReportDialog key={reportTarget.id} thread={reportTarget} onClose={() => setReportTarget(null)} />}
-    <Dialog open={open} onOpenChange={setOpen}><DialogContent><DialogHeader><DialogTitle>Poser une question</DialogTitle><DialogDescription>Un contexte précis aide la communauté à vous répondre vite.</DialogDescription></DialogHeader><div className="space-y-4"><div className="space-y-2"><Label>Rubrique</Label><Select value={newCategory} onValueChange={(value) => setNewCategory(value as ForgeCategorySlug)}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{(categories ?? []).map((cat) => <SelectItem key={cat.slug} value={cat.slug}>{cat.icon} {cat.name}</SelectItem>)}</SelectContent></Select></div><div className="space-y-2"><Label htmlFor="title">Titre</Label><Input id="title" value={title} onChange={(event) => setTitle(event.target.value)} /></div><div className="space-y-2"><Label htmlFor="body">Détail</Label><Textarea id="body" rows={6} value={body} onChange={(event) => setBody(event.target.value)} /></div><div className="space-y-2"><Label htmlFor="tags">Mots-clés</Label><Input id="tags" value={tags} onChange={(event) => setTags(event.target.value)} placeholder="react, typescript" /></div></div><DialogFooter><Button variant="ghost" onClick={() => setOpen(false)}>Annuler</Button><Button loading={create.isPending} onClick={publish}>Publier</Button></DialogFooter></DialogContent></Dialog>
+    {reportTarget && <ForgeReportDialog key={reportTarget.id} threadId={reportTarget.id} label="une discussion" onClose={() => setReportTarget(null)} />}
+    <Dialog open={open} onOpenChange={setOpen}><DialogContent><DialogHeader><DialogTitle>Poser une question</DialogTitle><DialogDescription>Un contexte précis aide la communauté à vous répondre vite.</DialogDescription></DialogHeader><div className="space-y-4"><div className="space-y-2"><Label>Rubrique</Label><Select value={newCategory} onValueChange={(value) => setNewCategory(value as ForgeCategorySlug)}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{(categories ?? []).map((cat) => <SelectItem key={cat.slug} value={cat.slug}>{cat.icon} {cat.name}</SelectItem>)}</SelectContent></Select></div><div className="space-y-2"><Label htmlFor="title">Titre</Label><Input id="title" value={title} onChange={(event) => setTitle(event.target.value)} /></div><div className="space-y-2"><Label htmlFor="body">Détail</Label><ul className="space-y-0.5 rounded-lg border border-border bg-surface-2 p-3 text-[12px] text-fg-muted"><li>· <b>Contexte</b> : page, module ou quête concernée.</li><li>· <b>Code ou extrait</b> : le minimum qui reproduit le problème.</li><li>· <b>Résultat attendu</b> et ce que vous obtenez (message d’erreur exact).</li><li>· <b>Déjà essayé</b> : ce que vous avez testé.</li><li>· Pas de livrable de quête complet à faire corriger ici : la validation reste celle du formateur.</li></ul><Textarea id="body" rows={9} value={body} onChange={(event) => setBody(event.target.value)} /></div><div className="space-y-2"><Label htmlFor="tags">Mots-clés</Label><Input id="tags" value={tags} onChange={(event) => setTags(event.target.value)} placeholder="react, typescript" /></div></div><DialogFooter><Button variant="ghost" onClick={() => setOpen(false)}>Annuler</Button><Button loading={create.isPending} onClick={publish}>Publier</Button></DialogFooter></DialogContent></Dialog>
   </div>
 }
