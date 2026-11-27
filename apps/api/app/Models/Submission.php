@@ -26,6 +26,7 @@ class Submission extends Model
         'user_id',
         'quest_id',
         'quest_step_id',
+        'quest_submission_id',
         'title',
         'body',
         'artifact_url',
@@ -40,11 +41,15 @@ class Submission extends Model
     protected function casts(): array
     {
         return [
-            'status' => SubmissionStatus::class,
             'xp_reward' => 'integer',
             'germes_reward' => 'integer',
             'reviewed_at' => 'datetime',
         ];
+    }
+
+    public function getStatusAttribute($value): string
+    {
+        return $value instanceof SubmissionStatus ? $value->value : (string) $value;
     }
 
     public function user(): BelongsTo
@@ -60,6 +65,11 @@ class Submission extends Model
     public function step(): BelongsTo
     {
         return $this->belongsTo(QuestStep::class, 'quest_step_id');
+    }
+
+    public function questSubmission(): BelongsTo
+    {
+        return $this->belongsTo(QuestSubmission::class, 'quest_submission_id');
     }
 
     public function reviewer(): BelongsTo

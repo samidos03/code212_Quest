@@ -7,6 +7,7 @@ namespace App\Http\Controllers\Api\V1;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\LearningPathResource;
 use App\Models\LearningPath;
+use App\Services\ModuleProgressionService;
 use App\Support\ApiResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -16,6 +17,11 @@ use Illuminate\Http\Request;
  */
 class LearningPathController extends Controller
 {
+    public function __construct(
+        private readonly ModuleProgressionService $progression,
+    ) {
+    }
+
     public function index(Request $request): JsonResponse
     {
         $paths = LearningPath::query()
@@ -33,5 +39,20 @@ class LearningPathController extends Controller
         $path->load('steps')->loadCount('steps');
 
         return ApiResponse::resource(new LearningPathResource($path));
+    }
+
+    /**
+     * Inscription d'un apprenant à un parcours (idempotente).
+     */
+    public function enroll(Request $request, LearningPath $path): JsonResponse
+    {
+        $enrollment = $this->progression->enroll($request->user(), $path);
+
+        return ApiResponse::data([
+            'inscription_id' => $enrollment->getKey(),
+            'parcours_id' => $path->getKey(),
+            'statut' => $enrollment->status,
+            'progression' => $this->progression->pathProgress($request->user(), $path),
+        ], 201);
     }
 }

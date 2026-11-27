@@ -32,7 +32,7 @@ class ExampleTest extends TestCase
     }
 
     #[Test]
-    public function les_voies_de_progression_sont_au nombre_de_quatre(): void
+    public function les_voies_de_progression_sont_au_nombre_de_quatre(): void
     {
         $this->assertCount(4, TrackCode::cases());
         $this->assertSame(

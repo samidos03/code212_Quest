@@ -9,13 +9,55 @@ use App\Models\QuestStep;
 use Illuminate\Database\Seeder;
 
 /**
- * 12 quetes avec leurs etapes (duree indicative : 60 a 120 minutes).
+ * Quêtes avec leurs étapes et quêtes finales de parcours.
  */
 class QuestSeeder extends Seeder
 {
     public function run(): void
     {
         $quests = [
+            [
+                'code' => 'Q-FULLSTACK-001', 'title' => 'Quête finale : Page de profil responsive', 'track' => 'codeur',
+                'difficulty' => 'debutant', 'xp' => 150, 'minutes' => 60,
+                'description' => 'Quête finale du Module 1 : Concevez une carte de profil utilisateur responsive et sémantique en HTML5 et CSS Flexbox.',
+                'steps' => [
+                    [
+                        'Livrable final : Intégration de la carte de profil',
+                        'preuve',
+                        'manuelle',
+                        150,
+                        'Critères de réussite explicites : 1. Structure sémantique HTML5 valide (<main>, <article>). 2. Mise en page Flexbox responsive et centrée. 3. Respect des contrastes et accessibilité. Livrable attendu : Lien vers votre dépôt GitHub ou extrait du code complet.',
+                    ],
+                ],
+            ],
+            [
+                'code' => 'Q-FULLSTACK-002', 'title' => 'Quête finale : Application interactive de filtrage', 'track' => 'codeur',
+                'difficulty' => 'intermediaire', 'xp' => 160, 'minutes' => 90,
+                'description' => 'Quête finale du Module 2 : Construisez un composant interactif en JavaScript pur manipulant le DOM et consommant une API en asynchrone.',
+                'steps' => [
+                    [
+                        'Livrable final : Mini-application JavaScript asynchrone',
+                        'preuve',
+                        'manuelle',
+                        160,
+                        'Critères de réussite explicites : 1. Écouteurs d’événements sans rechargement de page. 2. Requête Fetch avec gestion des erreurs et affichage asynchrone. 3. Code modulaire et documenté. Livrable attendu : Code source JavaScript et capture de l’interface fonctionnelle.',
+                    ],
+                ],
+            ],
+            [
+                'code' => 'Q-FULLSTACK-003', 'title' => 'Quête finale : API RESTful sécurisée avec Laravel', 'track' => 'codeur',
+                'difficulty' => 'intermediaire', 'xp' => 180, 'minutes' => 90,
+                'description' => 'Quête finale du Module 3 : Développez un contrôleur d’API Laravel avec validation FormRequest, relations Eloquent et ressource JSON normée.',
+                'steps' => [
+                    [
+                        'Livrable final : Endpoints API REST et contrôleur Laravel',
+                        'preuve',
+                        'manuelle',
+                        180,
+                        'Critères de réussite explicites : 1. Déclaration de routes apiResource avec contrôleur dédié. 2. Utilisation d’une FormRequest pour la validation serveur. 3. Réponse normée { data } via JsonResource sans fuite de secrets. Livrable attendu : Contrôleur Laravel, FormRequest et test d’endpoint.',
+                    ],
+                ],
+            ],
             [
                 'code' => 'Q-ALGO-001', 'title' => 'Premiers pas en algorithmique', 'track' => 'codeur',
                 'difficulty' => 'debutant', 'xp' => 120, 'minutes' => 60,
@@ -84,78 +126,68 @@ class QuestSeeder extends Seeder
             ],
             [
                 'code' => 'Q-BAT-001', 'title' => 'Organiser un projet d equipe', 'track' => 'batisseur',
-                'difficulty' => 'intermediaire', 'xp' => 170, 'minutes' => 90,
-                'description' => 'Decouper un projet, estimer les taches et distribuer le travail.',
+                'difficulty' => 'debutant', 'xp' => 100, 'minutes' => 60,
+                'description' => 'Definir les roles, un calendrier et des livrables clairs.',
                 'steps' => [
-                    ['Quiz : decoupage fonctionnel', 'qcm', 'manuelle', 30],
-                    ['Atelier : plan de projet et jalons', 'projet', 'manuelle', 120],
+                    ['Atelier : decoupage en taches', 'projet', 'manuelle', 60],
+                    ['Preuve : tableau de bord du projet', 'preuve', 'manuelle', 30],
                 ],
             ],
             [
                 'code' => 'Q-BAT-002', 'title' => 'Revue de code', 'track' => 'batisseur',
-                'difficulty' => 'avance', 'xp' => 210, 'minutes' => 120,
-                'description' => 'Relire le code d un camarde et formuler des retours utiles.',
+                'difficulty' => 'intermediaire', 'xp' => 130, 'minutes' => 75,
+                'description' => 'Relire le travail d un pair et donner un feedback constructif.',
                 'steps' => [
-                    ['Atelier : revue de code structuree', 'code', 'manuelle', 90],
-                    ['Preuve : rapport de revue', 'preuve', 'manuelle', 45],
+                    ['Atelier : grille de relecture', 'atelier', 'manuelle', 45],
+                    ['Preuve : revue d une PR sur GitHub', 'preuve', 'manuelle', 45],
                 ],
             ],
             [
-                'code' => 'Q-EXP-001', 'title' => 'Explorer un nouveau langage', 'track' => 'explorateur',
-                'difficulty' => 'debutant', 'xp' => 80, 'minutes' => 60,
-                'description' => 'Découvrir un langage inconnu et partager un premier programme.',
+                'code' => 'Q-EXP-001', 'title' => 'Decouvrir un nouveau langage', 'track' => 'explorateur',
+                'difficulty' => 'debutant', 'xp' => 80, 'minutes' => 45,
+                'description' => 'Ecrire un premier programme dans un langage que vous ne connaissez pas.',
                 'steps' => [
-                    ['Atelier : premier programme', 'code', 'manuelle', 60],
-                    ['Preuve : retour d experience', 'preuve', 'manuelle', 20],
+                    ['Atelier : hello world et syntaxe', 'code', 'manuelle', 45],
+                    ['Preuve : code source annote', 'preuve', 'manuelle', 30],
                 ],
             ],
             [
-                'code' => 'Q-EXP-002', 'title' => ' veille technologique', 'track' => 'explorateur',
-                'difficulty' => 'intermediaire', 'xp' => 140, 'minutes' => 75,
-                'description' => 'Suivre une actualite technique et la restituer au groupe.',
+                'code' => 'Q-EXP-002', 'title' => 'Veille technologique', 'track' => 'explorateur',
+                'difficulty' => 'intermediaire', 'xp' => 110, 'minutes' => 60,
+                'description' => 'Synthetiser une nouveaute technique et la presenter a la promo.',
                 'steps' => [
-                    ['Atelier : veille et synthese', 'projet', 'manuelle', 90],
-                    ['Presentation de 10 minutes', 'preuve', 'manuelle', 30],
-                ],
-            ],
-            [
-                'code' => 'Q-MIX-001', 'title' => 'Projet phare : mon premier jeu', 'track' => null,
-                'difficulty' => 'expert', 'xp' => 300, 'minutes' => 120,
-                'description' => 'Projet de fin de parcours : concevoir un jeu simple en JavaScript.',
-                'steps' => [
-                    ['Cahier des charges', 'projet', 'manuelle', 60],
-                    ['Prototype jouable', 'code', 'manuelle', 180],
-                    ['Demo et retour', 'preuve', 'manuelle', 45],
+                    ['Atelier : synthese d un article', 'atelier', 'manuelle', 45],
+                    ['Preuve : fiche de veille partagee', 'preuve', 'manuelle', 30],
                 ],
             ],
         ];
 
-        foreach ($quests as $position => $quest) {
-            $model = Quest::query()->updateOrCreate(
-                ['code' => $quest['code']],
+        foreach ($quests as $index => $data) {
+            $quest = Quest::query()->updateOrCreate(
+                ['code' => $data['code']],
                 [
-                    'title' => $quest['title'],
-                    'description' => $quest['description'],
-                    'track_code' => $quest['track'],
-                    'difficulty' => $quest['difficulty'],
+                    'title' => $data['title'],
+                    'description' => $data['description'],
+                    'track_code' => $data['track'],
+                    'difficulty' => $data['difficulty'],
                     'status' => 'publie',
-                    'xp_reward' => $quest['xp'],
-                    'germes_reward' => (int) round($quest['xp'] / 5),
-                    'estimated_minutes' => $quest['minutes'],
-                    'position' => $position + 1,
+                    'xp_reward' => $data['xp'],
+                    'germes_reward' => (int) round($data['xp'] / 5),
+                    'estimated_minutes' => $data['minutes'],
+                    'position' => $index + 1,
                 ]
             );
 
-            foreach ($quest['steps'] as $index => $step) {
+            foreach ($data['steps'] as $sIndex => $stepData) {
                 QuestStep::query()->updateOrCreate(
-                    ['quest_id' => $model->getKey(), 'order_index' => $index + 1],
+                    ['quest_id' => $quest->getKey(), 'order_index' => $sIndex + 1],
                     [
-                        'title' => $step[0],
-                        'description' => null,
-                        'type' => $step[1],
-                        'validation_mode' => $step[2],
-                        'xp_reward' => (int) round($quest['xp'] / count($quest['steps'])),
-                        'duration_minutes' => $step[3],
+                        'title' => $stepData[0],
+                        'type' => $stepData[1],
+                        'validation_mode' => $stepData[2],
+                        'xp_reward' => $stepData[3],
+                        'description' => $stepData[4] ?? null,
+                        'duration_minutes' => 30,
                     ]
                 );
             }

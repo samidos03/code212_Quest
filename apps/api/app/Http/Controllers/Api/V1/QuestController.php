@@ -132,12 +132,16 @@ class QuestController extends Controller
             ->whereKey($step)
             ->firstOrFail();
 
+        $validated = $formRequest->validated();
+        $rawContent = $validated['contenu'] ?? $validated['content'] ?? [];
+        $content = is_array($rawContent) ? $rawContent : ['content' => (string) $rawContent];
+
         $submission = $this->quests->submitStep(
             $request->user(),
             $quest,
             $questStep,
-            (array) $formRequest->validated()['contenu'],
-            $formRequest->validated()['commentaire'] ?? null
+            $content,
+            $validated['commentaire'] ?? null
         );
 
         return ApiResponse::resource(new QuestSubmissionResource($submission), 201);

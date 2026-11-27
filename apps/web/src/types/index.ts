@@ -209,6 +209,84 @@ export interface RewardOrder {
   createdAt: string
 }
 
+export type ModuleStatus =
+  | 'non_inscrit'
+  | 'verrouille'
+  | 'disponible'
+  | 'en_cours'
+  | 'quete_debloquee'
+  | 'en_attente'
+  | 'a_revoir'
+  | 'termine'
+
+export interface LessonExercise {
+  id: number
+  title: string
+  instructions: string
+  starterCode?: string
+  validationType: string
+  options?: { id: string; label: string }[]
+  order: number
+  passed: boolean
+  attempts: number
+}
+
+export interface ModuleLesson {
+  id: number
+  title: string
+  summary?: string
+  keyPoints?: string[]
+  content: string
+  exampleCode?: string
+  exampleExplanation?: string
+  order: number
+  durationMinutes: number
+  exercises: LessonExercise[]
+}
+
+export interface ModuleFinalQuest {
+  id: number
+  code: string
+  title: string
+  description: string
+  stepId?: number
+  xp: number
+  germs: number
+  unlocked: boolean
+  submission?: {
+    id: number
+    status: 'en_attente' | 'validee' | 'rejetee' | 'approuvee' | 'a_revoir'
+    attempt: number
+    trainerFeedback?: string
+    submittedAt?: string
+  }
+}
+
+export interface PathModuleSummary {
+  id: number
+  title: string
+  description?: string
+  order: number
+  status: ModuleStatus
+  exercisesTotal: number
+  exercisesPassed: number
+  questId?: number
+}
+
+export interface ModuleDetail {
+  id: number
+  pathId: number
+  title: string
+  description?: string
+  order: number
+  status: ModuleStatus
+  exercisesTotal: number
+  exercisesPassed: number
+  exercisesCompleted: boolean
+  lessons: ModuleLesson[]
+  finalQuest?: ModuleFinalQuest
+}
+
 export interface LearningPath {
   id: number
   slug: string
@@ -224,6 +302,7 @@ export interface LearningPath {
   icon: string
   gradient: string
   skills: string[]
+  modules?: PathModuleSummary[]
 }
 
 export interface Mission {

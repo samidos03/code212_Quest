@@ -35,7 +35,7 @@ class ModerationAdminController extends Controller
             ->latest('created_at')
             ->paginate((int) $request->integer('limite', 25));
 
-        return ApiResponse::paginated($reports, $reports->getCollection()->map(static fn (ForgeReport $report): array => [
+        $items = $reports->getCollection()->map(static fn (ForgeReport $report): array => [
             'id' => $report->id,
             'fil_id' => $report->thread_id,
             'solution_id' => $report->solution_id,
@@ -44,7 +44,16 @@ class ModerationAdminController extends Controller
             'statut_libelle' => $report->status->label(),
             'signale_par' => $report->reporter?->leaderboardAlias(),
             'cree_le' => $report->created_at?->toIso8601String(),
-        ])->all());
+        ])->values()->all();
+
+        return ApiResponse::data($items, 200, [
+            'pagination' => [
+                'current_page' => $reports->currentPage(),
+                'per_page'     => $reports->perPage(),
+                'total'        => $reports->total(),
+                'last_page'    => $reports->lastPage(),
+            ],
+        ]);
     }
 
     /**

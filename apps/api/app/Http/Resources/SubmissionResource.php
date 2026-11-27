@@ -19,12 +19,16 @@ class SubmissionResource extends JsonResource
     {
         return [
             'id' => $this->id,
+            'quest_id' => $this->quest_id,
+            'quest_step_id' => $this->quest_step_id,
             'titre' => $this->title,
             'contenu' => $this->body,
             'lien' => $this->artifact_url,
-            'statut' => $this->status?->value,
-            'statut_libelle' => $this->status?->label(),
+            'statut' => $this->status instanceof \App\Enums\SubmissionStatus ? $this->status->value : (string) $this->status,
+            'statut_libelle' => $this->status instanceof \App\Enums\SubmissionStatus ? $this->status->label() : (string) $this->status,
+            'status' => $this->status instanceof \App\Enums\SubmissionStatus ? $this->status->value : (string) $this->status,
             'xp' => (int) $this->xp_reward,
+            'xpAwarded' => (int) $this->xp_reward,
             'germes' => (int) $this->germes_reward,
             'note' => $this->review_note,
             'envoye_le' => $this->created_at?->toIso8601String(),

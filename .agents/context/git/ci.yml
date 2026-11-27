@@ -1,0 +1,92 @@
+name: Code212 Quest CI
+
+permissions:
+  contents: read
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  repository-hygiene:
+    name: Repository Hygiene
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Reject committed environment and private-key files
+        run: |
+          tracked_env="$(git ls-files | grep -E '(^|/)\.env($|\.)' | grep -vE '(^|/)\.env\.example$' || true)"
+          tracked_keys="$(git ls-files | grep -E '(^|/)(id_rsa|.*\.(pem|key))$' || true)"
+          if [ -n "$tracked_env$tracked_keys" ]; then
+            echo "A real environment or private-key file is tracked by Git."
+            printf '%s\n%s\n' "$tracked_env" "$tracked_keys"
+            exit 1
+          fi
+
+  frontend:
+    name: Frontend (React / TypeScript)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/web
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'npm'
+          cache-dependency-path: apps/web/package-lock.json
+      - name: Install dependencies
+        run: npm ci
+      - name: Typecheck and build production bundle
+        run: npm run build
+
+  backend:
+    name: Backend (Laravel / PostgreSQL)
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:18-alpine
+        env:
+          POSTGRES_DB: code212_quest_test
+          POSTGRES_USER: code212_user
+          POSTGRES_PASSWORD: ci_test_only_password
+        ports:
+          - 5432:5432
+        options: --health-cmd pg_isready --health-interval 5s --health-timeout 5s --health-retries 5
+
+    defaults:
+      run:
+        working-directory: apps/api
+    env:
+      APP_ENV: testing
+      DB_CONNECTION: pgsql
+      DB_HOST: 127.0.0.1
+      DB_PORT: 5432
+      DB_DATABASE: code212_quest_test
+      DB_USERNAME: code212_user
+      DB_PASSWORD: ci_test_only_password
+      CACHE_STORE: array
+      SESSION_DRIVER: array
+      QUEUE_CONNECTION: sync
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: mbstring, pdo_pgsql, pgsql, bcmath, json
+          coverage: none
+      - name: Copy .env
+        run: cp .env.example .env
+      - name: Install dependencies
+        run: composer install --no-interaction --prefer-dist
+      - name: Generate App Key
+        run: php artisan key:generate --force
+      - name: Run Migrations & Seeders
+        run: php artisan migrate --seed --force
+      - name: Run backend tests
+        run: php artisan test

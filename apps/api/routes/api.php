@@ -85,6 +85,9 @@ Route::prefix('v1')->middleware([ForceJsonResponse::class])->group(function (): 
         // --- Productions a faire valider -------------------------------------
         Route::get('submissions', [SubmissionController::class, 'index']);
         Route::post('submissions/{submission}/approve', [SubmissionController::class, 'approve'])->middleware('abilities:write');
+        Route::post('submissions/{submission}/review', [SubmissionController::class, 'approve'])->middleware('abilities:write');
+        Route::get('admin/submissions', [SubmissionController::class, 'index']);
+        Route::post('admin/submissions/{submission}/review', [SubmissionController::class, 'approve'])->middleware('abilities:write');
 
         // --- XP, classement, boutique ----------------------------------------
         Route::get('ledger', [LedgerController::class, 'index']);
@@ -103,9 +106,12 @@ Route::prefix('v1')->middleware([ForceJsonResponse::class])->group(function (): 
         Route::get('tracks', [TrackController::class, 'index']);
         Route::get('levels', [LevelController::class, 'index']);
 
-        // --- Parcours -----------------------------------------------------------
+        // --- Parcours & Modules ------------------------------------------------
         Route::get('paths', [LearningPathController::class, 'index']);
+        Route::post('paths/{path}/enroll', [LearningPathController::class, 'enroll'])->middleware('abilities:write');
         Route::get('paths/{path}', [LearningPathController::class, 'show']);
+        Route::get('paths/{path}/modules/{step}', [\App\Http\Controllers\Api\V1\ModuleController::class, 'show']);
+        Route::post('exercises/{exercise}/attempt', [\App\Http\Controllers\Api\V1\ModuleController::class, 'submitExercise'])->middleware('abilities:write');
 
         // --- Missions ------------------------------------------------------------
         Route::get('missions', [MissionController::class, 'index']);
