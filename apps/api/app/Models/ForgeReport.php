@@ -43,12 +43,12 @@ class ForgeReport extends Model
 
     public function thread(): BelongsTo
     {
-        return $this->belongsTo(ForgeThread::class);
+        return $this->belongsTo(ForgeThread::class, 'thread_id');
     }
 
     public function solution(): BelongsTo
     {
-        return $this->belongsTo(ForgeSolution::class);
+        return $this->belongsTo(ForgeSolution::class, 'solution_id');
     }
 
     public function reporter(): BelongsTo

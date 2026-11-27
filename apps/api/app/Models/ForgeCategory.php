@@ -37,16 +37,16 @@ class ForgeCategory extends Model
 
     public function threads(): HasMany
     {
-        return $this->hasMany(ForgeThread::class);
+        return $this->hasMany(ForgeThread::class, 'category_id');
     }
 
     public function moderators(): HasMany
     {
-        return $this->hasMany(ForgeModerator::class);
+        return $this->hasMany(ForgeModerator::class, 'category_id');
     }
 
     public function bans(): HasMany
     {
-        return $this->hasMany(ForgeBan::class);
+        return $this->hasMany(ForgeBan::class, 'category_id');
     }
 }

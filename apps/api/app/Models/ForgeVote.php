@@ -42,7 +42,7 @@ class ForgeVote extends Model
 
     public function solution(): BelongsTo
     {
-        return $this->belongsTo(ForgeSolution::class);
+        return $this->belongsTo(ForgeSolution::class, 'solution_id');
     }
 
     public function voter(): BelongsTo

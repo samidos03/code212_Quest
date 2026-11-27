@@ -39,7 +39,7 @@ class ForgeBan extends Model
 
     public function category(): BelongsTo
     {
-        return $this->belongsTo(ForgeCategory::class);
+        return $this->belongsTo(ForgeCategory::class, 'category_id');
     }
 
     public function user(): BelongsTo

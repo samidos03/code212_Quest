@@ -45,7 +45,7 @@ class ForgeSolution extends Model
 
     public function thread(): BelongsTo
     {
-        return $this->belongsTo(ForgeThread::class);
+        return $this->belongsTo(ForgeThread::class, 'thread_id');
     }
 
     public function author(): BelongsTo
@@ -60,11 +60,11 @@ class ForgeSolution extends Model
 
     public function votes(): HasMany
     {
-        return $this->hasMany(ForgeVote::class);
+        return $this->hasMany(ForgeVote::class, 'solution_id');
     }
 
     public function reports(): HasMany
     {
-        return $this->hasMany(ForgeReport::class);
+        return $this->hasMany(ForgeReport::class, 'solution_id');
     }
 }
