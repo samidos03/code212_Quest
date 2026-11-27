@@ -31,11 +31,15 @@ class SubmissionController extends Controller
     {
         $this->authorize('viewAny', Submission::class);
 
+        $pendingOnly = $request->string('statut')->toString() === SubmissionStatus::Pending->value;
+
         $submissions = Submission::query()
-            ->with('user')
+            ->with(['user', 'questSubmission', 'reviewer'])
             ->when($request->filled('statut'), static fn ($q) => $q->where('status', $request->string('statut')))
-            ->latest('created_at')
-            ->paginate((int) $request->integer('limite', 20));
+            // File d'attente : le plus ancien d'abord ; historique : le plus récent d'abord.
+            ->orderBy('created_at', $pendingOnly ? 'asc' : 'desc')
+            ->orderBy('id', $pendingOnly ? 'asc' : 'desc')
+            ->paginate(max(1, min(100, (int) $request->integer('limite', 20))));
 
         return ApiResponse::paginated($submissions, SubmissionResource::collection($submissions->getCollection()));
     }
@@ -59,6 +63,6 @@ class SubmissionController extends Controller
 
         $reviewed = $this->reviewService->review($submission, $request->user(), $status, $feedback);
 
-        return ApiResponse::resource(new SubmissionResource($reviewed));
+        return ApiResponse::resource(new SubmissionResource($reviewed->load(['questSubmission', 'reviewer'])));
     }
 }

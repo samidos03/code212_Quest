@@ -10,7 +10,8 @@ export type TrackCode = 'codeur' | 'aidant' | 'batisseur' | 'explorateur'
 
 export type QuestDifficulty = 'debutant' | 'intermediaire' | 'avance' | 'expert'
 export type QuestStatus = 'brouillon' | 'publiee' | 'archivee'
-export type SubmissionStatus = 'en_attente' | 'validee' | 'rejetee'
+export type SubmissionStatus = 'en_attente' | 'validee' | 'rejetee' | 'a_revoir'
+export type ReviewDecision = 'validee' | 'a_revoir'
 export type ChallengeStatus = 'a_venir' | 'en_cours' | 'termine'
 export type ChallengeMode = 'solo' | 'equipe' | 'duel'
 export type BadgeRarity = 'commun' | 'rare' | 'epique' | 'legendaire'
@@ -133,6 +134,8 @@ export interface Submission {
   reviewerName?: string
   xpAwarded: number
   feedback?: string
+  /** Numéro de tentative de la quête (1 pour un premier dépôt). */
+  attempt?: number
 }
 
 export interface LedgerEntry {

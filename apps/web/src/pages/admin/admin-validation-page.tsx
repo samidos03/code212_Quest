@@ -1,15 +1,14 @@
 import { useState } from 'react'
-import { CheckCircle2, Coins, Clock3, PackageCheck, XCircle } from 'lucide-react'
+import { CheckCircle2, Coins, Clock3, PackageCheck, RotateCcw, XCircle } from 'lucide-react'
 import { useAdminOrders, useAdminSubmissions, useReviewSubmission, useUpdateOrder } from '@/hooks/use-api'
 import { PageHeader } from '@/components/shared/page-header'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Label, Textarea } from '@/components/ui/input'
-import { Progress } from '@/components/ui/progress'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useToast } from '@/components/ui/toast'
 import { cn, formatDateTime, formatNumber, formatRelative } from '@/lib/utils'
-import type { Submission } from '@/types'
+import type { ReviewDecision, Submission } from '@/types'
 
 export function AdminValidationPage() {
   const { data: submissions } = useAdminSubmissions()
@@ -18,27 +17,47 @@ export function AdminValidationPage() {
   const updateOrder = useUpdateOrder()
   const { toast } = useToast()
   const [feedback, setFeedback] = useState<Record<number, string>>({})
+  const [missingFeedback, setMissingFeedback] = useState<number | null>(null)
+  const [busyId, setBusyId] = useState<number | null>(null)
 
-  const pending = (submissions ?? []).filter((s) => s.status === 'en_attente')
+  // File d'attente : le plus ancien dépôt d'abord.
+  const pending = (submissions ?? [])
+    .filter((s) => s.status === 'en_attente')
+    .sort((a, b) => a.submittedAt.localeCompare(b.submittedAt))
   const done = (submissions ?? []).filter((s) => s.status !== 'en_attente')
 
-  const decide = (submission: Submission, decision: 'validee' | 'rejetee') =>
+  const decide = (submission: Submission, decision: ReviewDecision) => {
+    const comment = (feedback[submission.id] ?? '').trim()
+    if (decision === 'a_revoir' && comment === '') {
+      setMissingFeedback(submission.id)
+      return
+    }
+    setMissingFeedback(null)
+    setBusyId(submission.id)
+
     review.mutate(
-      { id: submission.id, decision, feedback: feedback[submission.id] ?? '' },
+      { id: submission.id, decision, feedback: comment },
       {
         onSuccess: () =>
           toast(
-            decision === 'validee' ? 'Livrable validé' : 'Livrable rejeté',
+            decision === 'validee' ? 'Livrable approuvé' : 'Livrable renvoyé',
             {
               description:
                 decision === 'validee'
-                  ? 'Les XP et points de voie ont été attribués une seule fois.'
-                  : 'L’apprenant reçoit votre retour et peut redéposer.',
+                  ? 'Les XP et points de voie ont été attribués une seule fois. Le module suivant est débloqué.'
+                  : 'L’apprenant voit votre commentaire et peut déposer une nouvelle tentative.',
               kind: decision === 'validee' ? 'success' : 'info',
             },
           ),
+        onError: (error) =>
+          toast('Décision non enregistrée', {
+            description: error instanceof Error ? error.message : 'Réessayez dans un instant.',
+            kind: 'error',
+          }),
+        onSettled: () => setBusyId(null),
       },
     )
+  }
 
   return (
     <div>
@@ -75,6 +94,11 @@ export function AdminValidationPage() {
                         <Clock3 className="h-3 w-3" /> En attente
                       </Badge>
                       <span className="text-[11.5px] text-fg-subtle">{formatRelative(submission.submittedAt)}</span>
+                      {submission.attempt && submission.attempt > 1 && (
+                        <Badge variant="outline" className="gap-1">
+                          <RotateCcw className="h-3 w-3" /> Tentative {submission.attempt}
+                        </Badge>
+                      )}
                     </div>
                     <h3 className="mt-2 font-display text-[17px] font-bold text-fg">{submission.questTitle}</h3>
                     <p className="text-[12.5px] text-fg-muted">
@@ -89,22 +113,38 @@ export function AdminValidationPage() {
                 </div>
 
                 <div className="mt-4 space-y-2">
-                  <Label htmlFor={`feedback-${submission.id}`}>Retour au apprenant (facultatif)</Label>
+                  <Label htmlFor={`feedback-${submission.id}`}>
+                    Commentaire pour l’apprenant (obligatoire pour renvoyer)
+                  </Label>
                   <Textarea
                     id={`feedback-${submission.id}`}
                     rows={3}
                     value={feedback[submission.id] ?? ''}
                     onChange={(e) => setFeedback((current) => ({ ...current, [submission.id]: e.target.value }))}
                     placeholder="Ce qui est acquis, ce qui doit être repris, une ressource utile…"
+                    aria-invalid={missingFeedback === submission.id}
+                    className={cn(missingFeedback === submission.id && 'border-danger')}
                   />
+                  {missingFeedback === submission.id && (
+                    <p className="text-[12px] text-danger">Expliquez ce qu’il faut reprendre avant de renvoyer le livrable.</p>
+                  )}
                 </div>
 
                 <div className="mt-4 flex flex-wrap justify-end gap-2">
-                  <Button variant="outline" onClick={() => decide(submission, 'rejetee')} loading={review.isPending}>
-                    <XCircle className="h-4 w-4" /> Rejeter
+                  <Button
+                    variant="outline"
+                    onClick={() => decide(submission, 'a_revoir')}
+                    loading={busyId === submission.id}
+                    disabled={busyId !== null}
+                  >
+                    <RotateCcw className="h-4 w-4" /> Renvoyer avec commentaire
                   </Button>
-                  <Button onClick={() => decide(submission, 'validee')} loading={review.isPending}>
-                    <CheckCircle2 className="h-4 w-4" /> Valider et récompenser
+                  <Button
+                    onClick={() => decide(submission, 'validee')}
+                    loading={busyId === submission.id}
+                    disabled={busyId !== null}
+                  >
+                    <CheckCircle2 className="h-4 w-4" /> Approuver
                   </Button>
                 </div>
               </article>
@@ -179,12 +219,20 @@ export function AdminValidationPage() {
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-[13.5px] font-semibold text-fg">{submission.questTitle}</p>
                     <p className="truncate text-[11.5px] text-fg-subtle">
-                      {submission.studentPseudonym} · {submission.stepTitle}
+                      {submission.studentPseudonym}
+                      {submission.attempt ? ` · tentative ${submission.attempt}` : ''}
                       {submission.reviewerName ? ` · traité par ${submission.reviewerName}` : ''}
                     </p>
+                    {submission.feedback && (
+                      <p className="mt-1 text-[12px] text-fg-muted">« {submission.feedback} »</p>
+                    )}
                   </div>
                   <Badge variant={submission.status === 'validee' ? 'success' : 'outline'}>
-                    {submission.status === 'validee' ? `Validé · +${submission.xpAwarded} XP` : 'Rejeté'}
+                    {submission.status === 'validee'
+                      ? `Approuvé · +${submission.xpAwarded} XP`
+                      : submission.status === 'a_revoir'
+                        ? 'Renvoyé'
+                        : 'Rejeté'}
                   </Badge>
                 </div>
               ))}
@@ -199,10 +247,8 @@ export function AdminValidationPage() {
           <li>· Une validation ne peut créditer qu’une seule fois : la clé d’idempotence (utilisateur, événement, référence) est unique en base.</li>
           <li>· Une règle XP dispose d’un plafond journalier : un apprenant ne peut pas accumuler des gains illimités.</li>
           <li>· Chaque décision est écrite dans le journal d’audit avec l’auteur, la cible et la justification.</li>
-          <li>· Un apprenant peut contester une décision : la procédure de recours est ouverte depuis son dossier.</li>
+          <li>· Un renvoi exige un commentaire : l’apprenant le voit sur son module et dépose une nouvelle tentative.</li>
         </ul>
-        <Progress value={72} className="mt-4" indicatorClassName="bg-primary" />
-        <p className="mt-1.5 text-[11.5px] text-fg-subtle">72 % des livrables sont traités dans les 48 h.</p>
       </section>
     </div>
   )

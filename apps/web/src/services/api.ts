@@ -276,7 +276,7 @@ function adaptSubmission(raw: Record<string, any>): import('@/types').Submission
     'approuvee': 'validee',
     'validee': 'validee',
     'rejetee': 'rejetee',
-    'a_revoir': 'en_attente',
+    'a_revoir': 'a_revoir',
   }
   return {
     id: Number(raw.id),
@@ -291,9 +291,10 @@ function adaptSubmission(raw: Record<string, any>): import('@/types').Submission
     status: (statusMap[raw.statut ?? raw.status] ?? 'en_attente') as any,
     submittedAt: String(raw.envoye_le ?? raw.submittedAt ?? raw.created_at ?? new Date().toISOString()),
     reviewedAt: raw.corrige_le ?? raw.reviewedAt ?? undefined,
-    reviewerName: raw.reviewerName ?? undefined,
+    reviewerName: raw.correcteur?.nom ?? raw.reviewerName ?? undefined,
     xpAwarded: Number(raw.xp ?? raw.xp_reward ?? raw.xpAwarded ?? 0),
-    feedback: raw.note ?? raw.review_note ?? raw.feedback ?? undefined,
+    feedback: raw.feedback ?? raw.note ?? raw.review_note ?? undefined,
+    attempt: raw.tentative != null ? Number(raw.tentative) : undefined,
   }
 }
 
@@ -419,10 +420,10 @@ export const api = {
   adminOverview: () => (USE_MOCK ? mockApi.getAdminOverview() : http.get<import('@/types').AdminOverview>('/admin/analytics')),
   adminSubmissions: async () => {
     if (USE_MOCK) return mockApi.getAdminSubmissions()
-    const payload = await http.get<{ data: Record<string, any>[] } | Record<string, any>[]>('/admin/submissions')
+    const payload = await http.get<{ data: Record<string, any>[] } | Record<string, any>[]>('/admin/submissions?limite=100')
     return extractData(payload).map(adaptSubmission)
   },
-  reviewSubmission: async (id: number, decision: 'validee' | 'rejetee', feedback: string) => {
+  reviewSubmission: async (id: number, decision: import('@/types').ReviewDecision, feedback: string) => {
     if (USE_MOCK) return mockApi.reviewSubmission(id, decision, feedback)
     const payload = await http.post<{ data: Record<string, any> } | Record<string, any>>(`/admin/submissions/${id}/review`, { decision, feedback })
     return adaptSubmission(extractData(payload))

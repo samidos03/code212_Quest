@@ -196,7 +196,7 @@ export const useAdminStudents = () => useQuery({ queryKey: ['admin', 'students']
 export function useReviewSubmission() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: (payload: { id: number; decision: 'validee' | 'rejetee'; feedback: string }) =>
+    mutationFn: (payload: { id: number; decision: import('@/types').ReviewDecision; feedback: string }) =>
       api.reviewSubmission(payload.id, payload.decision, payload.feedback),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['admin'] })
