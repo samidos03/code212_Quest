@@ -1,5 +1,0 @@
-/* Polices auto-hébergées — Rajdhani (display / titres) + Inter (texte) */
-@font-face{font-family:'Inter';font-style:normal;font-weight:100 900;font-display:swap;src:url('/fonts/inter-var.woff2') format('woff2');}
-@font-face{font-family:'Rajdhani';font-style:normal;font-weight:500;font-display:swap;src:url('/fonts/rajdhani-500.woff2') format('woff2');}
-@font-face{font-family:'Rajdhani';font-style:normal;font-weight:600;font-display:swap;src:url('/fonts/rajdhani-600.woff2') format('woff2');}
-@font-face{font-family:'Rajdhani';font-style:normal;font-weight:700;font-display:swap;src:url('/fonts/rajdhani-700.woff2') format('woff2');}

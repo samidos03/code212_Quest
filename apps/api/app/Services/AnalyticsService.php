@@ -57,7 +57,7 @@ final class AnalyticsService
                 'commandes' => (int) RewardOrder::query()->count(),
                 'en_attente' => (int) RewardOrder::query()->where('status', RewardStatus::Pending->value)->count(),
                 'germes_circulants' => (int) User::query()->sum('germes_balance'),
-                'germes_debits' => (int) DB::table('germes_ledger')->where('germes_delta', '<', 0)->sum(abs(DB::raw('germes_delta'))),
+                'germes_debits' => abs((int) DB::table('germes_ledger')->where('germes_delta', '<', 0)->sum('germes_delta')),
             ],
             'xp' => [
                 'attribue_total' => (int) XpLedgerEntry::query()->sum('xp_delta'),

@@ -27,6 +27,7 @@ final class QuestService
         private readonly XpLedgerService $ledger,
         private readonly BadgeService $badges,
         private readonly AuditLogger $audit,
+        private readonly ModuleProgressionService $moduleProgression,
     ) {
     }
 
@@ -37,6 +38,10 @@ final class QuestService
     {
         if (! $quest->isOpen()) {
             throw new BusinessRuleException('Cette quete n est pas ouverte aux inscriptions.', [], 422);
+        }
+
+        if ($this->moduleProgression->stepForQuest($quest) !== null) {
+            $this->moduleProgression->assertCanSubmitFinalQuest($user, $quest);
         }
 
         $enrollment = $this->findOrCreateEnrollment($user, $quest);
@@ -73,32 +78,51 @@ final class QuestService
         array $content,
         ?string $notes = null,
     ): QuestSubmission {
+        $moduleStep = $this->moduleProgression->stepForQuest($quest);
+        if ($moduleStep !== null) {
+            $this->moduleProgression->assertCanSubmitFinalQuest($user, $quest);
+        }
+
         $enrollment = QuestEnrollment::query()
             ->where('user_id', $user->getKey())
             ->where('quest_id', $quest->getKey())
             ->first();
 
+        if ($enrollment === null && $moduleStep !== null) {
+            $enrollment = $this->findOrCreateEnrollment($user, $quest);
+        }
+
         if ($enrollment === null) {
             throw new BusinessRuleException('Vous devez vous inscrire a cette quete avant de soumettre une etape.', [], 403);
         }
 
-        $idempotencyKey = IdempotencyKey::forStep($user, (int) $quest->getKey(), (int) $step->getKey());
         $fingerprint = IdempotencyKey::fingerprint($content);
 
         $existing = QuestSubmission::query()
             ->where('user_id', $user->getKey())
             ->where('quest_id', $quest->getKey())
             ->where('quest_step_id', $step->getKey())
+            ->latest('attempt_number')
             ->first();
 
+        $attemptNumber = 1;
         if ($existing !== null) {
-            return $this->assertSameContent($existing, $fingerprint);
+            if ($existing->status === SubmissionStatus::Approved) {
+                throw new BusinessRuleException('Cette étape est déjà validée.', [], 422);
+            }
+            if ($existing->status === SubmissionStatus::Pending) {
+                return $this->assertSameContent($existing, $fingerprint);
+            }
+            // En cas de rejet ou demande de révision, une nouvelle tentative est créée
+            $attemptNumber = (int) $existing->attempt_number + 1;
         }
+
+        $idempotencyKey = IdempotencyKey::forStep($user, (int) $quest->getKey(), (int) $step->getKey()) . ($attemptNumber > 1 ? ":{$attemptNumber}" : '');
 
         try {
             /** @var QuestSubmission $submission */
-            $submission = DB::transaction(function () use ($user, $quest, $step, $enrollment, $content, $notes, $idempotencyKey, $fingerprint): QuestSubmission {
-                return QuestSubmission::create([
+            $submission = DB::transaction(function () use ($user, $quest, $step, $enrollment, $content, $notes, $idempotencyKey, $fingerprint, $attemptNumber): QuestSubmission {
+                $qs = QuestSubmission::create([
                     'user_id' => $user->getKey(),
                     'quest_id' => $quest->getKey(),
                     'quest_step_id' => $step->getKey(),
@@ -106,10 +130,30 @@ final class QuestService
                     'content' => $content,
                     'notes' => $notes,
                     'status' => SubmissionStatus::Pending->value,
+                    'attempt_number' => $attemptNumber,
                     'idempotency_key' => $idempotencyKey,
                     'content_hash' => $fingerprint,
                     'submitted_at' => now(),
                 ]);
+
+                $contentText = is_string($content['content'] ?? null)
+                    ? $content['content']
+                    : (is_string($content['contenu'] ?? null) ? $content['contenu'] : json_encode($content, JSON_UNESCAPED_UNICODE));
+
+                \App\Models\Submission::query()->create([
+                    'user_id' => $user->getKey(),
+                    'quest_id' => $quest->getKey(),
+                    'quest_step_id' => $step->getKey(),
+                    'quest_submission_id' => $qs->getKey(),
+                    'title' => $quest->title . ' — ' . $step->title,
+                    'body' => $contentText,
+                    'artifact_url' => is_string($contentText) && filter_var($contentText, FILTER_VALIDATE_URL) ? $contentText : null,
+                    'status' => SubmissionStatus::Pending->value,
+                    'xp_reward' => (int) $step->xp_reward,
+                    'germes_reward' => (int) round($step->xp_reward / 5),
+                ]);
+
+                return $qs;
             });
         } catch (QueryException $exception) {
             if (! $this->isUniqueViolation($exception)) {
@@ -120,6 +164,7 @@ final class QuestService
                 ->where('user_id', $user->getKey())
                 ->where('quest_id', $quest->getKey())
                 ->where('quest_step_id', $step->getKey())
+                ->latest('attempt_number')
                 ->first();
 
             if ($existing === null) {
@@ -183,6 +228,17 @@ final class QuestService
             }
 
             $this->refreshEnrollmentProgress($submission);
+
+            \App\Models\Submission::query()
+                ->where('user_id', $submission->user_id)
+                ->where('quest_id', $quest?->getKey())
+                ->where('quest_step_id', $submission->quest_step_id)
+                ->update([
+                    'status' => $status->value,
+                    'reviewed_at' => now(),
+                    'reviewed_by' => $reviewer->getKey(),
+                    'review_note' => $feedback,
+                ]);
         });
 
         $this->audit->log(

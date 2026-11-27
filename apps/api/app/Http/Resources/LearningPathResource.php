@@ -17,6 +17,10 @@ class LearningPathResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
+        $progressionService = app(\App\Services\ModuleProgressionService::class);
+        $user = $request->user();
+        $progress = $user ? $progressionService->pathProgress($user, $this->resource) : null;
+
         return [
             'id' => $this->id,
             'code' => $this->code,
@@ -28,6 +32,11 @@ class LearningPathResource extends JsonResource
             'bonus_xp' => (int) $this->xp_bonus,
             'bonus_germes' => (int) $this->germes_bonus,
             'publie' => (bool) $this->published,
+            'inscrit' => $progress ? (bool) $progress['inscrit'] : false,
+            'progression' => $progress ? (float) $progress['progression_pourcentage'] : 0.0,
+            'modules_total' => $progress ? (int) $progress['modules_total'] : $this->steps()->count(),
+            'modules_termines' => $progress ? (int) $progress['modules_termines'] : 0,
+            'modules' => $progress ? $progress['modules'] : [],
             'etapes' => PathStepResource::collection($this->whenLoaded('steps')),
             'nb_etapes' => $this->whenCounted('steps'),
         ];

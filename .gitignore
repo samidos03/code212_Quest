@@ -5,7 +5,6 @@ dist/
 .env.*.local
 .DS_Store
 *.log
-
 # Laravel
 apps/api/vendor/
 apps/api/.env

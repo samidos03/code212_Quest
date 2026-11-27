@@ -344,6 +344,120 @@ export const mockApi = {
     return seedPaths
   },
 
+  async getPath(id: number): Promise<LearningPath> {
+    await delay()
+    const p = seedPaths.find((path) => path.id === id) ?? seedPaths[0]
+    return { ...p }
+  },
+
+  async enrollPath(id: number): Promise<{ inscription_id: number; parcours_id: number }> {
+    await delay(200)
+    return { inscription_id: 1, parcours_id: id }
+  },
+
+  async getModuleDetail(pathId: number, stepId: number): Promise<import('@/types').ModuleDetail> {
+    await delay()
+    return {
+      id: stepId,
+      pathId,
+      title: 'Module 1 : Fondations Web (HTML & CSS Modernes)',
+      description: 'Maîtriser la sémantique HTML5, la mise en page Flexbox et soumettre la quête finale.',
+      order: 1,
+      status: 'en_cours',
+      exercisesTotal: 2,
+      exercisesPassed: 2,
+      exercisesCompleted: true,
+      lessons: [
+        {
+          id: 1,
+          title: 'Structure & Sémantique HTML5',
+          summary: 'Balises sémantiques et hiérarchie accessible.',
+          keyPoints: [
+            '<main> identifie le contenu central et unique de la page web.',
+            '<article> encapsule un contenu autonome et réutilisable (carte, billet).',
+            '<section> regroupe des éléments thématiques connexes.',
+            'L’accessibilité (a11y) s’appuie sur les balises natives pour les lecteurs d’écran.',
+          ],
+          content: 'En HTML5 moderne, la structure d’un document repose sur des balises sémantiques qui donnent un sens explicite au contenu.',
+          exampleCode: '<main class="content-wrapper">\n  <article class="mission-card">\n    <header>\n      <h2>Déploiement du Noyau Orbital</h2>\n      <time datetime="2026-11-27">27 nov. 2026</time>\n    </header>\n    <p>Initialisation des micro-services de communication.</p>\n  </article>\n</main>',
+          exampleExplanation: 'Chaque balise explicite son rôle structurel sans nécessiter de classes CSS artificielles pour l’accessibilité.',
+          order: 1,
+          durationMinutes: 15,
+          exercises: [
+            {
+              id: 1,
+              title: 'Quiz : Sémantique HTML5',
+              instructions: 'Quelle balise HTML5 est spécialement dédiée à englober le bloc de contenu principal et unique d’une page web ?',
+              validationType: 'qcm',
+              options: [
+                { id: 'a', label: '<section>' },
+                { id: 'b', label: '<main>' },
+                { id: 'c', label: '<div>' },
+                { id: 'd', label: '<content>' },
+              ],
+              order: 1,
+              passed: true,
+              attempts: 1,
+            },
+          ],
+        },
+        {
+          id: 2,
+          title: 'Alignement & Mise en Page avec Flexbox',
+          summary: 'Centrage et espacement régulier des composants.',
+          keyPoints: [
+            'display: flex active le modèle de boîte flexible unidimensionnel.',
+            'justify-content contrôle la distribution le long de l’axe principal.',
+            'align-items positionne et aligne les éléments sur l’axe transversal.',
+            'gap définit un espacement uniforme et propre sans marges parasites.',
+          ],
+          content: 'Flexbox simplifie la disposition et le centrage horizontal et vertical des composants sur tous les écrans.',
+          exampleCode: '.toolbar-actions {\n  display: flex;\n  justify-content: space-between;\n  align-items: center;\n  gap: 1.25rem;\n}',
+          exampleExplanation: 'Le conteneur distribue les boutons aux extrémités et les centre sur la hauteur.',
+          order: 2,
+          durationMinutes: 20,
+          exercises: [
+            {
+              id: 2,
+              title: 'Quiz : Alignement Flexbox',
+              instructions: 'Dans un conteneur en ligne (display: flex), quelle propriété CSS contrôle l’alignement des enfants sur l’axe transversal vertical ?',
+              validationType: 'qcm',
+              options: [
+                { id: 'a', label: 'align-items' },
+                { id: 'b', label: 'justify-content' },
+                { id: 'c', label: 'flex-align' },
+                { id: 'd', label: 'text-align' },
+              ],
+              order: 1,
+              passed: true,
+              attempts: 1,
+            },
+          ],
+        },
+      ],
+      finalQuest: {
+        id: 1,
+        code: 'Q-FULLSTACK-001',
+        title: 'Quête finale : Page de profil responsive',
+        description: 'Concevez une carte de profil responsive et sémantique en HTML5 et CSS Flexbox.',
+        stepId: 1,
+        xp: 150,
+        germs: 30,
+        unlocked: true,
+      },
+    }
+  },
+
+  async submitExercise(_exerciseId: number, answer: string): Promise<{ reussi: boolean; message: string; tentative: number }> {
+    await delay(300)
+    const passed = answer.length > 5
+    return {
+      reussi: passed,
+      message: passed ? 'Exercice réussi avec succès !' : 'Critères non atteints.',
+      tentative: 1,
+    }
+  },
+
   async getMissions(): Promise<Mission[]> {
     await delay()
     return seedMissions.map((m) => ({ ...m, claimed: state.claimedMissions.includes(m.id) }))

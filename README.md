@@ -29,6 +29,12 @@ Ouvrez **http://localhost:5173**. L'application fonctionne intégralement sur un
 de démonstration servi par un adaptateur local : chaque écran, chaque état d'interface et chaque
 invariant métier sont déjà câblés.
 
+### Option Docker (facultative)
+
+Pour lancer le frontend, l'API Laravel, PostgreSQL et Redis sans installer leurs dépendances
+sur chaque machine, consultez le guide [`DockerDoc.md`](DockerDoc.md). Le mode mock reste activé
+par défaut ; le branchement complet à l'API reste à valider séparément.
+
 **Basculer sur l'API Laravel** : renseignez `VITE_USE_MOCK=false` et `VITE_API_BASE_URL=https://api.uca.ma/api/v1`.
 Aucun composant n'a besoin d'être modifié — voir `apps/web/src/services/api.ts`.
 

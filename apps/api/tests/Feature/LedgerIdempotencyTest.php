@@ -66,7 +66,7 @@ class LedgerIdempotencyTest extends TestCase
     }
 
     #[Test]
-    public function une_ correction_se_fait_par_ecriture_compensatoire(): void
+    public function une_correction_se_fait_par_ecriture_compensatoire(): void
     {
         $user = $this->makeUser();
 

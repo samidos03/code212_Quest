@@ -9,13 +9,10 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\ApproveSubmissionRequest;
 use App\Http\Resources\SubmissionResource;
 use App\Models\Submission;
-use App\Services\AuditLogger;
-use App\Services\XpLedgerService;
+use App\Services\SubmissionReviewService;
 use App\Support\ApiResponse;
-use App\Support\XpSource;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 
 /**
  * Productions soumises a l'approbation des formateurs.
@@ -23,8 +20,7 @@ use Illuminate\Support\Facades\DB;
 class SubmissionController extends Controller
 {
     public function __construct(
-        private readonly XpLedgerService $ledger,
-        private readonly AuditLogger $audit,
+        private readonly SubmissionReviewService $reviewService,
     ) {
     }
 
@@ -51,38 +47,18 @@ class SubmissionController extends Controller
     {
         $this->authorize('approve', $submission);
 
-        $decision = (string) ($formRequest->validated()['decision'] ?? SubmissionStatus::Approved->value);
-        $status = SubmissionStatus::from($decision);
+        $rawDecision = (string) ($formRequest->validated()['decision'] ?? SubmissionStatus::Approved->value);
+        $mappedDecision = match ($rawDecision) {
+            'approve', 'validee', 'approuvee' => SubmissionStatus::Approved->value,
+            'reject', 'rejetee' => SubmissionStatus::Rejected->value,
+            'revoir', 'a_revoir' => SubmissionStatus::NeedsReview->value,
+            default => $rawDecision,
+        };
+        $status = SubmissionStatus::from($mappedDecision);
         $feedback = $formRequest->validated()['feedback'] ?? null;
 
-        DB::transaction(function () use ($submission, $status, $feedback, $request): void {
-            $submission->forceFill([
-                'status' => $status->value,
-                'reviewed_by' => $request->user()->getKey(),
-                'reviewed_at' => now(),
-                'review_note' => $feedback,
-            ])->save();
+        $reviewed = $this->reviewService->review($submission, $request->user(), $status, $feedback);
 
-            if ($status === SubmissionStatus::Approved && (int) $submission->xp_reward > 0) {
-                $this->ledger->record(
-                    $submission->user,
-                    XpSource::SUBMISSION_APPROVED,
-                    (string) $submission->getKey(),
-                    (int) $submission->xp_reward,
-                    $submission->user->track_code
-                );
-            }
-        });
-
-        $this->audit->log(
-            $request->user(),
-            'submission.approved',
-            'submission',
-            $submission->getKey(),
-            $feedback,
-            ['status' => $status->value, 'apprenant_id' => $submission->user_id]
-        );
-
-        return ApiResponse::resource(new SubmissionResource($submission->refresh()->load('user')));
+        return ApiResponse::resource(new SubmissionResource($reviewed));
     }
 }

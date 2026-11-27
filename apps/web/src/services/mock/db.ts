@@ -265,6 +265,26 @@ const questSeeds: Array<{
       ['PR acceptée', 'livrable', 230, 30, 'Lien vers la PR fusionnée.'],
     ],
   },
+  {
+    id: 13, slug: 'full-stack-web', title: 'Développement Web Full-Stack', subtitle: '6 étapes concises pour tester la chaîne complète',
+    category: 'Développement Web', track: 'codeur', difficulty: 'debutant', xpReward: 350, trackPoints: 100, germs: 25,
+    minutes: 60, participants: 85, rate: 92, author: 'Centre CODE212', icon: '</>', gradient: 'violet', days: 1, prereq: [],
+    objectives: [
+      'Structurer une interface en HTML/CSS sémantique',
+      'Rendre la page interactive en JavaScript moderne',
+      'Traiter des requêtes en PHP et requêter une base SQL',
+      'Exposer une API REST Laravel et la consommer',
+    ],
+    badges: ['Full-Stack Starter'],
+    steps: [
+      ['HTML & CSS : Structure et Style', 'code', 50, 10, 'Syntaxe : <main>, <header>, flexbox. Exemple : carte responsive. Test : créer une carte profil centrée.'],
+      ['JavaScript : DOM et Événements', 'code', 50, 10, 'Syntaxe : document.querySelector, addEventListener. Exemple : clic déclenchant une action. Test : injecter du texte au clic.'],
+      ['PHP : Formulaires et Traitement', 'code', 50, 10, 'Syntaxe : htmlspecialchars($_POST["val"]). Exemple : script recevant un formulaire. Test : valider et renvoyer la saisie nettoyée.'],
+      ['SQL : Bases et Relations', 'code', 50, 10, 'Syntaxe : SELECT u.nom, q.titre FROM users u JOIN quests q ON q.user_id = u.id. Exemple : requête jointe. Test : écrire une jointure avec filtre.'],
+      ['Laravel : Routes et Contrôleurs', 'code', 50, 10, 'Syntaxe : Route::get("/api/v1/...", [Ctrl::class, "index"]). Exemple : contrôleur API JSON. Test : déclarer un endpoint et valider un FormRequest.'],
+      ['Intégration Full-Stack : API REST & Frontend', 'livrable', 100, 10, 'Syntaxe : fetch("/api/v1/...") + affichage React. Exemple : chargement asynchrone d une liste. Test : soumettre le livrable complet.'],
+    ],
+  },
 ]
 
 export const quests: Quest[] = questSeeds.map((q) => ({
@@ -381,10 +401,32 @@ export const badges: Badge[] = badgeSeeds.map(([name, description, track, rarity
 export const paths: LearningPath[] = [
   {
     id: 1, slug: 'dev-web', title: 'Développement Web Full-Stack',
-    description: 'Du HTML aux APIs sécurisées : 6 quêtes, un projet livrable, une certification.',
-    track: 'codeur', level: 'intermediaire', quests: [1, 3, 8, 9], progress: 62, xpReward: 3200,
+    description: 'Du HTML aux APIs sécurisées : 6 chapitres concis style W3Schools pour tester l application de bout en bout.',
+    track: 'codeur', level: 'debutant', quests: [13, 1, 3], progress: 62, xpReward: 3200,
     estimatedHours: 14, enrolled: true, icon: '</>', gradient: 'violet',
-    skills: ['React', 'Laravel', 'Git', 'TypeScript'],
+    skills: ['HTML/CSS', 'JavaScript', 'PHP', 'SQL', 'Laravel', 'React'],
+    modules: [
+      {
+        id: 1,
+        title: 'Module 1 : Fondations Web (HTML & CSS Modernes)',
+        description: 'Structure sémantique et mise en page Flexbox responsive.',
+        order: 1,
+        status: 'en_cours',
+        exercisesTotal: 2,
+        exercisesPassed: 2,
+        questId: 1,
+      },
+      {
+        id: 2,
+        title: 'Module 2 : Dynamique Frontend (JavaScript ES6+)',
+        description: 'Interactions DOM et événements.',
+        order: 2,
+        status: 'verrouille',
+        exercisesTotal: 2,
+        exercisesPassed: 0,
+        questId: 2,
+      },
+    ],
   },
   {
     id: 2, slug: 'ia-data', title: 'IA & Data Science',

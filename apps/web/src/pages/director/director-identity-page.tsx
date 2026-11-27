@@ -1,6 +1,5 @@
 import { useState } from 'react'
 import { Camera, CheckCircle2, Save, ShieldCheck } from 'lucide-react'
-import { IdentityCard } from '@/components/shared/identity-card'
 import { useDirectorIdentity } from '@/lib/director-identity'
 import { Input, Label, Textarea } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
