@@ -39,6 +39,17 @@ class User extends Authenticatable
     use HasFactory;
     use Notifiable;
 
+    /**
+     * Valeurs par défaut alignées sur la base (niveau 1, aucun XP), pour qu'un
+     * modèle tout juste créé les expose sans rechargement.
+     *
+     * @var array<string, int>
+     */
+    protected $attributes = [
+        'level_no' => 1,
+        'xp_total' => 0,
+    ];
+
     protected $fillable = [
         'name',
         'email',

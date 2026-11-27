@@ -24,6 +24,11 @@ class UpdateXpRuleRequest extends FormRequest
     public function rules(): array
     {
         return [
+            // Identification de la règle : au moins un des trois champs.
+            'id' => ['required_without_all:code,evenement', 'integer'],
+            'code' => ['required_without_all:id,evenement', 'string', 'max:80'],
+            'evenement' => ['required_without_all:id,code', 'string', 'max:64'],
+            'justification' => ['nullable', 'string', 'max:2000'],
             'nom' => ['sometimes', 'string', 'max:160'],
             'description' => ['sometimes', 'nullable', 'string', 'max:2000'],
             'voie' => ['sometimes', 'nullable', Rule::in(TrackCode::values())],

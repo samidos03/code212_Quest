@@ -54,8 +54,10 @@ final class LevelService
             throw new \RuntimeException('Aucun niveau configure : table levels_config vide.');
         }
 
+        // Les niveaux sont triés par seuil croissant : le niveau atteint est le
+        // dernier dont le seuil est inférieur ou égal au total.
         /** @var Level|null $level */
-        $level = $levels->first(static fn (Level $candidate): bool => $candidate->xp_threshold <= $totalXp);
+        $level = $levels->last(static fn (Level $candidate): bool => $candidate->xp_threshold <= $totalXp);
 
         return $level ?? $levels->first();
     }

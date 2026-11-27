@@ -57,8 +57,9 @@ class LevelProgressionTest extends TestCase
     {
         $user = $this->makeUser();
 
+        // Seuils de test : 0 / 100 / 300 / 1000. 200 XP correspond au niveau 2.
         $entry = $this->ledger->record($user, XpSource::QUEST_STEP_APPROVED, 1, 200);
-        $this->assertSame(3, (int) $user->refresh()->level_no);
+        $this->assertSame(2, (int) $user->refresh()->level_no);
 
         $this->ledger->compensate($entry, 150, 'Erreur de bareme.');
 
