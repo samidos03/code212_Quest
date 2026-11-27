@@ -47,7 +47,8 @@ class ModuleController extends Controller
         $result = $this->exercises->validateAndRecord(
             $request->user(),
             $exercise,
-            (string) $request->validated('reponse')
+            (string) $request->validated('reponse'),
+            $request->validated('question_id')
         );
 
         return ApiResponse::data($result, 201);

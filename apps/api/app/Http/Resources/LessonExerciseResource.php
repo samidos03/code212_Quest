@@ -35,11 +35,30 @@ class LessonExerciseResource extends JsonResource
                 ->count();
         }
 
-        // Options aléatoires pour QCM sans JAMAIS divulguer la bonne réponse ni l'explication
+        // QCM : une question tirée au hasard dans le pool (ou la question unique
+        // historique), options mélangées. La bonne réponse et l'explication ne
+        // sont jamais exposées.
         $options = [];
+        $questionId = null;
+        $instructions = $this->instructions;
+        $poolSize = 0;
         $rules = $this->validation_rules ?? [];
-        if ($this->validation_type === 'qcm' && isset($rules['options']) && is_array($rules['options'])) {
-            $rawOptions = $rules['options'];
+
+        if ($this->validation_type === 'qcm') {
+            $question = null;
+            $pool = $rules['pool'] ?? null;
+
+            if (is_array($pool) && $pool !== []) {
+                $poolSize = count($pool);
+                $question = $pool[array_rand($pool)];
+                $questionId = isset($question['id']) ? (string) $question['id'] : null;
+                $instructions = (string) ($question['question'] ?? $instructions);
+            } elseif (isset($rules['options'])) {
+                $poolSize = 1;
+                $question = $rules;
+            }
+
+            $rawOptions = is_array($question['options'] ?? null) ? $question['options'] : [];
             shuffle($rawOptions);
             foreach ($rawOptions as $opt) {
                 if (isset($opt['id'], $opt['label'])) {
@@ -54,7 +73,9 @@ class LessonExerciseResource extends JsonResource
         return [
             'id' => $this->id,
             'titre' => $this->title,
-            'instructions' => $this->instructions,
+            'instructions' => $instructions,
+            'question_id' => $questionId,
+            'taille_pool' => $poolSize,
             'code_depart' => $this->starter_code,
             'type_validation' => $this->validation_type,
             'options' => $options,

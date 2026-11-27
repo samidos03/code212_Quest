@@ -12,7 +12,8 @@ use App\Models\Quest;
 use Illuminate\Database\Seeder;
 
 /**
- * 5 parcours d'apprentissage dont le parcours Développeur Full-Stack en 3 modules.
+ * Parcours d'apprentissage, dont le parcours Développeur Full-Stack en 3 modules
+ * (8 chapitres, chaque QCM tiré d'un pool de 3 questions).
  */
 class LearningPathSeeder extends Seeder
 {
@@ -123,8 +124,13 @@ class LearningPathSeeder extends Seeder
                         $this->seedFullStackModule2($stepModel);
                     } elseif ($index === 2) {
                         $this->seedFullStackModule3($stepModel);
+                        $this->seedFullStackModule3Extras($stepModel);
                     }
                 }
+            }
+
+            if ($path['code'] === 'P-FULLSTACK') {
+                $this->applyQcmPools($model);
             }
         }
     }
@@ -377,6 +383,167 @@ class LearningPathSeeder extends Seeder
                     'correct' => 'a',
                     'explanation' => 'L’Eager Loading (via with()) regroupe le chargement des modèles enfants en une requête SQL optimisée.',
                 ],
+            ]
+        );
+    }
+
+    /**
+     * Questions supplémentaires par QCM (la question d'origine devient q1).
+     * Chaque entrée : [question, [a, b, c, d], bonne option, explication].
+     *
+     * @var array<string, list<array{0: string, 1: list<string>, 2: string, 3: string}>>
+     */
+    private const QCM_EXTRA = [
+        'Quiz : Sémantique HTML5' => [
+            ['Quelle balise convient pour une carte de quête autonome qui garde son sens si on la déplace ailleurs ?', ['<article>', '<aside>', '<span>', '<nav>'], 'a', '<article> représente un contenu autonome et réutilisable.'],
+            ['Un lecteur d’écran doit annoncer le menu principal du site. Quelle balise l’entoure ?', ['<menu-bar>', '<nav>', '<header>', '<ul> seule'], 'b', '<nav> signale un bloc de liens de navigation principal.'],
+        ],
+        'Quiz : Alignement Flexbox' => [
+            ['Quelle propriété ajoute un espace régulier entre les enfants d’un conteneur flex sans marges ?', ['padding', 'margin-inline', 'gap', 'spacing'], 'c', 'gap espace les enfants sans ajouter de marge sur les bords.'],
+            ['Avec flex-direction: column, quel axe contrôle justify-content ?', ['L’axe horizontal', 'L’axe vertical', 'Aucun axe', 'Les deux axes'], 'b', 'justify-content suit l’axe principal, qui devient vertical en colonne.'],
+        ],
+        'Quiz : Gestion des Événements DOM' => [
+            ['Quelle méthode renvoie le premier élément qui correspond au sélecteur CSS « .btn-valider » ?', ['document.getElementsByClassName(\'.btn-valider\')', 'document.querySelector(\'.btn-valider\')', 'document.find(\'.btn-valider\')', 'document.select(\'.btn-valider\')'], 'b', 'querySelector accepte un sélecteur CSS et renvoie le premier élément trouvé.'],
+            ['Pourquoi préférer addEventListener à element.onclick = ... ?', ['Il est plus rapide à l’exécution', 'Il permet plusieurs écouteurs sur le même événement', 'Il fonctionne sans navigateur', 'Il empêche les erreurs JavaScript'], 'b', 'addEventListener ajoute un écouteur sans remplacer ceux déjà attachés.'],
+        ],
+        'Quiz : Statut HTTP avec Fetch' => [
+            ['fetch() reçoit une réponse 404. Que se passe-t-il par défaut ?', ['La promesse est rejetée', 'La promesse est résolue avec response.ok à false', 'Le navigateur recharge la page', 'Une exception est levée côté serveur'], 'b', 'fetch ne rejette qu’en cas d’erreur réseau ; il faut tester response.ok.'],
+            ['Que fait « await » devant un appel qui renvoie une promesse ?', ['Il annule la promesse', 'Il attend sa résolution et renvoie la valeur', 'Il exécute l’appel deux fois', 'Il convertit la réponse en JSON'], 'b', 'await suspend la fonction async jusqu’à la résolution de la promesse.'],
+        ],
+        'Quiz : Routage REST dans Laravel' => [
+            ['Quel verbe HTTP utilise la route qui met à jour une ressource existante avec apiResource ?', ['POST', 'GET', 'PUT/PATCH', 'DELETE'], 'c', 'apiResource associe update aux verbes PUT et PATCH.'],
+            ['Dans Route::get(\'quests/{quest}\', ...), que fait le Route Model Binding ?', ['Il valide le JSON reçu', 'Il charge le modèle Quest correspondant à l’identifiant', 'Il crée la table quests', 'Il met la réponse en cache'], 'b', 'Laravel résout {quest} en instance du modèle, ou renvoie 404.'],
+        ],
+        'Quiz : Optimisation N+1 avec Eloquent' => [
+            ['Quel rôle joue une JsonResource dans une API Laravel ?', ['Elle exécute les migrations', 'Elle contrôle la forme du JSON renvoyé au client', 'Elle chiffre la base de données', 'Elle remplace les contrôleurs'], 'b', 'La ressource découple le schéma interne du contrat exposé.'],
+            ['Pourquoi entourer une approbation qui écrit XP et statut d’un DB::transaction() ?', ['Pour accélérer les requêtes', 'Pour que tout soit enregistré, ou rien en cas d’erreur', 'Pour contourner les contraintes SQL', 'Pour journaliser les requêtes'], 'b', 'La transaction garantit que les écritures liées réussissent ou échouent ensemble.'],
+        ],
+    ];
+
+    /**
+     * Transforme chaque QCM du parcours Full-Stack en pool de questions.
+     * Idempotent : la question q1 est reprise du pool existant ou des
+     * champs d'origine.
+     */
+    private function applyQcmPools(LearningPath $path): void
+    {
+        $exercises = LessonExercise::query()
+            ->where('validation_type', 'qcm')
+            ->whereHas('lesson.step', fn ($query) => $query->where('learning_path_id', $path->getKey()))
+            ->get();
+
+        foreach ($exercises as $exercise) {
+            $extra = self::QCM_EXTRA[$exercise->title] ?? null;
+            if ($extra === null) {
+                continue;
+            }
+
+            $rules = $exercise->validation_rules ?? [];
+            $first = $rules['pool'][0] ?? [
+                'id' => 'q1',
+                'question' => $exercise->instructions,
+                'options' => $rules['options'] ?? [],
+                'correct' => $rules['correct'] ?? '',
+                'explanation' => $rules['explanation'] ?? '',
+            ];
+
+            $pool = [$first];
+            foreach ($extra as $index => [$question, $labels, $correct, $explanation]) {
+                $pool[] = self::question('q'.($index + 2), $question, $labels, $correct, $explanation);
+            }
+
+            $exercise->validation_rules = ['pool' => $pool];
+            $exercise->save();
+        }
+    }
+
+    /**
+     * @param  list<string>  $labels
+     * @return array<string, mixed>
+     */
+    private static function question(string $id, string $question, array $labels, string $correct, string $explanation): array
+    {
+        $options = [];
+        foreach ($labels as $i => $label) {
+            $options[] = ['id' => chr(ord('a') + $i), 'label' => $label];
+        }
+
+        return [
+            'id' => $id,
+            'question' => $question,
+            'options' => $options,
+            'correct' => $correct,
+            'explanation' => $explanation,
+        ];
+    }
+
+    /**
+     * Module 3, chapitres 3 et 4 : SQL relationnel et intégration front/back.
+     */
+    private function seedFullStackModule3Extras(PathStep $step): void
+    {
+        $sql = ModuleLesson::query()->updateOrCreate(
+            ['path_step_id' => $step->getKey(), 'order_index' => 3],
+            [
+                'title' => 'SQL relationnel : requêtes, jointures et contraintes',
+                'summary' => 'Lire et écrire les requêtes SQL qu’Eloquent génère, et laisser PostgreSQL protéger les données.',
+                'key_points' => [
+                    'SELECT … WHERE filtre les lignes ; ORDER BY et LIMIT bornent le résultat.',
+                    'INNER JOIN relie deux tables par une clé étrangère et ne garde que les lignes appariées.',
+                    'Une contrainte UNIQUE ou CHECK refuse une donnée invalide même si le code oublie de la vérifier.',
+                    'Un index sur les colonnes filtrées évite de parcourir toute la table.',
+                ],
+                'content' => "Eloquent écrit le SQL pour vous, mais c’est PostgreSQL qui l’exécute. Savoir lire une requête permet de repérer un N+1, une jointure manquante ou un filtre non indexé, et de placer les règles critiques (unicité, bornes) directement dans le schéma.",
+                'example_code' => "-- Apprenants ayant au moins une soumission en attente sur une quête\nSELECT u.pseudonym, q.title, s.submitted_at\nFROM quest_submissions s\nINNER JOIN users  u ON u.id = s.user_id\nINNER JOIN quests q ON q.id = s.quest_id\nWHERE s.status = 'en_attente'\nORDER BY s.submitted_at ASC\nLIMIT 20;\n\n-- Une seule inscription par apprenant et par parcours\nALTER TABLE learning_path_enrollments\n  ADD CONSTRAINT enrollments_user_path_unique UNIQUE (user_id, learning_path_id);",
+                'example_explanation' => "La première requête construit la file de revue la plus ancienne d’abord. La contrainte UNIQUE empêche une double inscription, même si deux requêtes arrivent en même temps.",
+                'estimated_minutes' => 25,
+            ]
+        );
+
+        $this->seedPoolExercise($sql, 'Quiz : Requêtes SQL et contraintes', [
+            self::question('q1', 'Quelle clause garde uniquement les lignes qui ont une correspondance dans les deux tables ?', ['LEFT JOIN', 'INNER JOIN', 'UNION', 'GROUP BY'], 'b', 'INNER JOIN ne conserve que les lignes appariées des deux côtés.'),
+            self::question('q2', 'Où placer la règle « une seule inscription par apprenant et par parcours » pour qu’elle tienne même sous charge ?', ['Dans un commentaire du contrôleur', 'Dans une contrainte UNIQUE en base', 'Dans le localStorage du navigateur', 'Dans le fichier .env'], 'b', 'Seule la base garantit l’unicité face aux requêtes concurrentes.'),
+            self::question('q3', 'Une requête filtre souvent sur status et submitted_at. Quelle action réduit son coût ?', ['Ajouter un index sur ces colonnes', 'Ajouter SELECT *', 'Supprimer la clé primaire', 'Passer la colonne en TEXT'], 'a', 'Un index permet à PostgreSQL de ne lire que les lignes utiles.'),
+        ]);
+
+        $integration = ModuleLesson::query()->updateOrCreate(
+            ['path_step_id' => $step->getKey(), 'order_index' => 4],
+            [
+                'title' => 'Relier le frontend React à l’API Laravel',
+                'summary' => 'Appeler l’API avec un jeton, lire l’enveloppe { data } et afficher les erreurs de validation 422.',
+                'key_points' => [
+                    'Le jeton Sanctum part dans l’en-tête Authorization: Bearer <jeton>.',
+                    'Les réponses réussies sont enveloppées dans { data } ; les erreurs dans { message, errors }.',
+                    'Un 422 détaille les champs invalides : on les affiche à côté du champ concerné.',
+                    'Un même service API sert le mode mock et le mode réel (VITE_USE_MOCK).',
+                ],
+                'content' => "Le frontend ne doit pas deviner l’état du serveur. Il envoie la requête, lit le statut HTTP, puis affiche ce que l’API renvoie : les données, l’erreur de validation ou le message d’accès refusé. Aucune progression n’est stockée dans le navigateur.",
+                'example_code' => "async function submitFinalQuest(questId, stepId, contenu, token) {\n  const res = await fetch(`/api/v1/quests/\${questId}/steps/\${stepId}/submit`, {\n    method: 'POST',\n    headers: {\n      'Accept': 'application/json',\n      'Content-Type': 'application/json',\n      'Authorization': `Bearer \${token}`,\n    },\n    body: JSON.stringify({ contenu }),\n  });\n\n  const body = await res.json();\n  if (res.status === 422) return { errors: body.errors };\n  if (!res.ok) throw new Error(body.message);\n  return { submission: body.data }; // statut « en_attente »\n}",
+                'example_explanation' => "La fonction distingue la validation (422, erreurs par champ) des autres échecs, et renvoie la soumission en attente telle que l’API l’a enregistrée.",
+                'estimated_minutes' => 25,
+            ]
+        );
+
+        $this->seedPoolExercise($integration, 'Quiz : Intégration frontend et API', [
+            self::question('q1', 'Où le frontend place-t-il le jeton Sanctum pour appeler une route protégée ?', ['Dans l’URL ?token=', 'Dans l’en-tête Authorization: Bearer', 'Dans un cookie lisible en JavaScript', 'Dans le corps de chaque GET'], 'b', 'Les routes auth:sanctum lisent le jeton dans l’en-tête Authorization.'),
+            self::question('q2', 'L’API répond 422 avec { message, errors }. Que doit faire l’interface ?', ['Afficher les erreurs à côté des champs concernés', 'Réessayer la requête en boucle', 'Considérer la soumission comme acceptée', 'Vider le formulaire sans rien dire'], 'a', 'Le 422 décrit les champs à corriger : on les montre à l’apprenant.'),
+            self::question('q3', 'Après une soumission de quête, où lire son statut « en attente » ?', ['Dans le localStorage', 'Dans la réponse de l’API (data.statut)', 'Dans une variable globale', 'Dans le titre de la page'], 'b', 'L’état fait foi côté serveur ; le front affiche ce que l’API renvoie.'),
+        ]);
+    }
+
+    /**
+     * @param  list<array<string, mixed>>  $pool
+     */
+    private function seedPoolExercise(ModuleLesson $lesson, string $title, array $pool): void
+    {
+        LessonExercise::query()->updateOrCreate(
+            ['module_lesson_id' => $lesson->getKey(), 'order_index' => 1],
+            [
+                'title' => $title,
+                'instructions' => (string) $pool[0]['question'],
+                'starter_code' => null,
+                'validation_type' => 'qcm',
+                'validation_rules' => ['pool' => $pool],
             ]
         );
     }

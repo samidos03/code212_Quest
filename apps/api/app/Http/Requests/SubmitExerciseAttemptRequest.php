@@ -20,6 +20,8 @@ class SubmitExerciseAttemptRequest extends FormRequest
     {
         return [
             'reponse' => ['required', 'string', 'max:10000'],
+            // Identifiant de la question tirée du pool (obligatoire si le QCM a un pool).
+            'question_id' => ['nullable', 'string', 'max:32'],
         ];
     }
 

@@ -178,6 +178,8 @@ function adaptModuleDetail(raw: Record<string, any>): import('@/types').ModuleDe
                     label: String(opt.label),
                   }))
                 : undefined,
+              questionId: ex.question_id ? String(ex.question_id) : undefined,
+              poolSize: Number(ex.taille_pool ?? 1),
               order: Number(ex.ordre ?? 1),
               passed: Boolean(ex.reussi),
               attempts: Number(ex.tentatives ?? 0),
@@ -351,11 +353,11 @@ export const api = {
     const payload = await http.get<{ data: Record<string, any> } | Record<string, any>>(`/paths/${pathId}/modules/${stepId}`)
     return adaptModuleDetail(extractData(payload))
   },
-  submitExercise: async (exerciseId: number, reponse: string) => {
-    if (USE_MOCK) return mockApi.submitExercise(exerciseId, reponse)
+  submitExercise: async (exerciseId: number, reponse: string, questionId?: string) => {
+    if (USE_MOCK) return mockApi.submitExercise(exerciseId, reponse, questionId)
     const payload = await http.post<{ data: { reussi: boolean; message: string; tentative: number } } | { reussi: boolean; message: string; tentative: number }>(
       `/exercises/${exerciseId}/attempt`,
-      { reponse },
+      questionId ? { reponse, question_id: questionId } : { reponse },
     )
     return extractData(payload)
   },

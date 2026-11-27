@@ -226,6 +226,10 @@ export interface LessonExercise {
   starterCode?: string
   validationType: string
   options?: { id: string; label: string }[]
+  /** Question tirée dans le pool du QCM ; à renvoyer avec la réponse. */
+  questionId?: string
+  /** Nombre de questions du pool (1 si le QCM n'a qu'une question). */
+  poolSize: number
   order: number
   passed: boolean
   attempts: number

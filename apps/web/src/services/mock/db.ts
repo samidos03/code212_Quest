@@ -26,6 +26,7 @@ import type {
   TrackCode,
   XpRule,
 } from '@/types'
+import { FULLSTACK_PATH_ID, fullStackModules } from './fullstack-fixture'
 
 const now = Date.now()
 const iso = (daysAgo: number, hour = 10) => {
@@ -400,33 +401,22 @@ export const badges: Badge[] = badgeSeeds.map(([name, description, track, rarity
 
 export const paths: LearningPath[] = [
   {
-    id: 1, slug: 'dev-web', title: 'Développement Web Full-Stack',
-    description: 'Du HTML aux APIs sécurisées : 6 chapitres concis style W3Schools pour tester l application de bout en bout.',
-    track: 'codeur', level: 'debutant', quests: [13, 1, 3], progress: 62, xpReward: 3200,
+    id: FULLSTACK_PATH_ID, slug: 'fullstack', title: 'Parcours Développeur Full-Stack',
+    description: 'Parcours débutant Full-Stack en 3 modules progressifs : Fondations HTML/CSS, Dynamique JavaScript et Backend Laravel API.',
+    track: 'codeur', level: 'debutant', quests: fullStackModules.map((m) => m.finalQuest.id), progress: 0, xpReward: 500,
     estimatedHours: 14, enrolled: true, icon: '</>', gradient: 'violet',
     skills: ['HTML/CSS', 'JavaScript', 'PHP', 'SQL', 'Laravel', 'React'],
-    modules: [
-      {
-        id: 1,
-        title: 'Module 1 : Fondations Web (HTML & CSS Modernes)',
-        description: 'Structure sémantique et mise en page Flexbox responsive.',
-        order: 1,
-        status: 'en_cours',
-        exercisesTotal: 2,
-        exercisesPassed: 2,
-        questId: 1,
-      },
-      {
-        id: 2,
-        title: 'Module 2 : Dynamique Frontend (JavaScript ES6+)',
-        description: 'Interactions DOM et événements.',
-        order: 2,
-        status: 'verrouille',
-        exercisesTotal: 2,
-        exercisesPassed: 0,
-        questId: 2,
-      },
-    ],
+    // Mêmes modules, ordre et quêtes finales que le seeder Laravel.
+    modules: fullStackModules.map((m) => ({
+      id: m.id,
+      title: m.title,
+      description: m.description,
+      order: m.order,
+      status: m.order === 1 ? 'en_cours' : 'verrouille',
+      exercisesTotal: m.lessons.reduce((n, l) => n + l.exercises.length, 0),
+      exercisesPassed: 0,
+      questId: m.finalQuest.id,
+    })),
   },
   {
     id: 2, slug: 'ia-data', title: 'IA & Data Science',

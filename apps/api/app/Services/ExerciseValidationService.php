@@ -8,6 +8,7 @@ use App\Models\ExerciseAttempt;
 use App\Models\LessonExercise;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 
 class ExerciseValidationService
 {
@@ -22,7 +23,7 @@ class ExerciseValidationService
      *
      * @return array{reussi: bool, message: string, tentative: int}
      */
-    public function validateAndRecord(User $user, LessonExercise $exercise, string $answer): array
+    public function validateAndRecord(User $user, LessonExercise $exercise, string $answer, ?string $questionId = null): array
     {
         $answerClean = trim($answer);
         $rules = $exercise->validation_rules ?? [];
@@ -33,6 +34,7 @@ class ExerciseValidationService
 
         switch ($type) {
             case 'qcm':
+                $rules = $this->qcmQuestion($rules, $questionId);
                 $expected = strtolower(trim((string) ($rules['correct'] ?? '')));
                 if ($expected !== '' && strtolower($answerClean) === $expected) {
                     $passed = true;
@@ -79,7 +81,9 @@ class ExerciseValidationService
                 break;
         }
 
-        return DB::transaction(function () use ($user, $exercise, $answerClean, $passed, $feedback): array {
+        $stored = $questionId !== null && $type === 'qcm' ? $questionId.':'.$answerClean : $answerClean;
+
+        return DB::transaction(function () use ($user, $exercise, $stored, $passed, $feedback): array {
             $lockedUser = User::query()->lockForUpdate()->findOrFail($user->getKey());
             $this->progression->assertCanAttemptExercise($lockedUser, $exercise);
 
@@ -91,7 +95,7 @@ class ExerciseValidationService
             ExerciseAttempt::create([
                 'user_id' => $lockedUser->getKey(),
                 'lesson_exercise_id' => $exercise->getKey(),
-                'answer' => $answerClean,
+                'answer' => $stored,
                 'passed' => $passed,
                 'feedback' => $feedback,
                 'attempt_number' => $attemptNumber,
@@ -103,5 +107,30 @@ class ExerciseValidationService
                 'tentative' => $attemptNumber,
             ];
         });
+    }
+
+    /**
+     * Règles de la question visée : entrée du pool si le QCM en a un, sinon la
+     * question unique historique.
+     *
+     * @param  array<string, mixed>  $rules
+     * @return array<string, mixed>
+     */
+    private function qcmQuestion(array $rules, ?string $questionId): array
+    {
+        $pool = $rules['pool'] ?? null;
+        if (! is_array($pool) || $pool === []) {
+            return $rules;
+        }
+
+        foreach ($pool as $question) {
+            if ($questionId !== null && (string) ($question['id'] ?? '') === $questionId) {
+                return $question;
+            }
+        }
+
+        throw ValidationException::withMessages([
+            'question_id' => ['Question inconnue pour ce QCM. Rechargez le chapitre.'],
+        ]);
     }
 }
