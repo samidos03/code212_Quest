@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { CheckCircle2, Eye, Flag, Lock, MessageSquare, Pin, Plus, Search, Send, ShieldCheck } from 'lucide-react'
-import { useCreateThread, useForgeCategories, useForgeThreads, useMe, useReplyToThread } from '@/hooks/use-api'
+import { useCreateThread, useForgeCategories, useForgeThreads, useReplyToThread } from '@/hooks/use-api'
+import { useAuth } from '@/lib/auth'
 import { ForgeReportDialog } from '@/components/forge/report-dialog'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -84,7 +85,7 @@ function QuickReply({ thread, onClose }: { thread: ForgeThread; onClose: () => v
 }
 
 export function ForgePage() {
-  const { data: me } = useMe()
+  const { user: me } = useAuth()
   const [quickReply, setQuickReply] = useState<ForgeThread | null>(null)
   const [reportTarget, setReportTarget] = useState<ForgeThread | null>(null)
   const canModerate = Boolean(me?.roles?.some(role => role === 'moderator' || role === 'admin'))

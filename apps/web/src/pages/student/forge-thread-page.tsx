@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { ArrowLeft, CheckCircle2, Flag, Send } from 'lucide-react'
-import { useAcceptSolution, useForgeThread, useMe, useReplyToThread } from '@/hooks/use-api'
+import { useAcceptSolution, useForgeThread, useReplyToThread } from '@/hooks/use-api'
+import { useAuth } from '@/lib/auth'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Textarea } from '@/components/ui/input'
@@ -17,7 +18,8 @@ export function ForgeThreadPage() {
   const navigate = useNavigate()
   const { toast } = useToast()
   const { data, isLoading, isError, error } = useForgeThread(threadId)
-  const { data: me } = useMe()
+  // Session connectée (même source que l'en-tête) : id et rôles normalisés.
+  const { user: me } = useAuth()
   const reply = useReplyToThread(threadId)
   const accept = useAcceptSolution(threadId)
   const [body, setBody] = useState('')
@@ -46,7 +48,7 @@ export function ForgeThreadPage() {
   const { thread, solutions } = data
   // Seul le demandeur (ou un formateur/modérateur) choisit la solution ; l'API le vérifie aussi.
   const isStaff = Boolean(me?.roles?.some((role) => role === 'trainer' || role === 'moderator' || role === 'admin'))
-  const canAccept = !thread.solved && (isStaff || (me !== undefined && Number(me.id) === thread.authorId))
+  const canAccept = !thread.solved && (isStaff || (me != null && Number(me.id) === thread.authorId))
 
   return (
     <div className="space-y-5">
