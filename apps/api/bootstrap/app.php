@@ -40,6 +40,23 @@ return Application::configure(basePath: dirname(__DIR__))
             ], $e->status());
         });
 
+        // 401 / 403 : même enveloppe {message, errors}, en français.
+        $exceptions->render(static function (\Illuminate\Auth\AuthenticationException $e, Request $request): ?Response {
+            if (! ($request->is('api/*') || $request->expectsJson())) {
+                return null;
+            }
+
+            return response()->json(['message' => 'Authentification requise.', 'errors' => (object) []], 401);
+        });
+
+        $exceptions->render(static function (\Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException $e, Request $request): ?Response {
+            if (! ($request->is('api/*') || $request->expectsJson())) {
+                return null;
+            }
+
+            return response()->json(['message' => 'Action non autorisée pour votre rôle.', 'errors' => (object) []], 403);
+        });
+
         $exceptions->render(static function (ValidationException $e): Response {
             return response()->json([
                 'message' => 'Les donnees transmises sont invalides.',

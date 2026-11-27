@@ -236,11 +236,16 @@ class ModuleProgressionService
         }
 
         if (! $this->canSubmitFinalQuest($user, $quest)) {
-            throw new BusinessRuleException(
-                'Cette quête finale est verrouillée tant que les modules précédents ne sont pas validés par un formateur.',
-                [],
-                422
-            );
+            $status = $this->moduleStatus($user, $step);
+
+            // Message et code selon l'état réel du module.
+            [$message, $code] = match ($status) {
+                'en_attente' => ['Une tentative est déjà en attente de correction par un formateur.', 409],
+                'termine' => ['Ce module est déjà validé : aucune nouvelle tentative n’est nécessaire.', 409],
+                default => ['Cette quête finale est verrouillée tant que les modules précédents ne sont pas validés par un formateur.', 422],
+            };
+
+            throw new BusinessRuleException($message, ['quete' => [$message]], $code);
         }
     }
 
