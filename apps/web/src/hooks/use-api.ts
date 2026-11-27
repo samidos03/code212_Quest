@@ -72,8 +72,8 @@ export function useEnrollPath() {
 export function useSubmitExercise() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: (payload: { exerciseId: number; answer: string; pathId?: number; stepId?: number }) =>
-      api.submitExercise(payload.exerciseId, payload.answer),
+    mutationFn: (payload: { exerciseId: number; answer: string; questionId?: string; pathId?: number; stepId?: number }) =>
+      api.submitExercise(payload.exerciseId, payload.answer, payload.questionId),
     onSuccess: (_, variables) => {
       if (variables.pathId && variables.stepId) {
         qc.invalidateQueries({ queryKey: ['path', variables.pathId, 'module', variables.stepId] })

@@ -29,6 +29,7 @@ import {
   weeklyActivity,
   xpRules as seedRules,
 } from './db'
+import { fullStackModules } from './fullstack-fixture'
 import type {
   AdminOverview,
   Badge,
@@ -155,6 +156,18 @@ function persist() {
 
 /** Latence simulée pour rendre l'UI réaliste (squelettes, états de chargement). */
 const delay = (ms = 180 + Math.random() * 220) => new Promise((r) => setTimeout(r, ms))
+
+/** Tentatives de QCM du mode mock (mémoire de session, pas de localStorage). */
+const exerciseState: Record<number, { passed: boolean; attempts: number }> = {}
+
+function shuffled<T>(items: T[]): T[] {
+  const copy = [...items]
+  for (let i = copy.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1))
+    ;[copy[i], copy[j]] = [copy[j], copy[i]]
+  }
+  return copy
+}
 
 function levelFor(xp: number): LevelConfig {
   return [...levels].reverse().find((l) => xp >= l.xpThreshold) ?? levels[0]
@@ -357,104 +370,69 @@ export const mockApi = {
 
   async getModuleDetail(pathId: number, stepId: number): Promise<import('@/types').ModuleDetail> {
     await delay()
+    const module = fullStackModules.find((m) => m.id === stepId) ?? fullStackModules[0]
+    const exercises = module.lessons.flatMap((l) => l.exercises)
+    const passed = exercises.filter((e) => exerciseState[e.id]?.passed).length
+    const summary = seedPaths.find((p) => p.id === pathId)?.modules?.find((m) => m.id === module.id)
+
     return {
-      id: stepId,
+      id: module.id,
       pathId,
-      title: 'Module 1 : Fondations Web (HTML & CSS Modernes)',
-      description: 'Maîtriser la sémantique HTML5, la mise en page Flexbox et soumettre la quête finale.',
-      order: 1,
-      status: 'en_cours',
-      exercisesTotal: 2,
-      exercisesPassed: 2,
-      exercisesCompleted: true,
-      lessons: [
-        {
-          id: 1,
-          title: 'Structure & Sémantique HTML5',
-          summary: 'Balises sémantiques et hiérarchie accessible.',
-          keyPoints: [
-            '<main> identifie le contenu central et unique de la page web.',
-            '<article> encapsule un contenu autonome et réutilisable (carte, billet).',
-            '<section> regroupe des éléments thématiques connexes.',
-            'L’accessibilité (a11y) s’appuie sur les balises natives pour les lecteurs d’écran.',
-          ],
-          content: 'En HTML5 moderne, la structure d’un document repose sur des balises sémantiques qui donnent un sens explicite au contenu.',
-          exampleCode: '<main class="content-wrapper">\n  <article class="mission-card">\n    <header>\n      <h2>Déploiement du Noyau Orbital</h2>\n      <time datetime="2026-11-27">27 nov. 2026</time>\n    </header>\n    <p>Initialisation des micro-services de communication.</p>\n  </article>\n</main>',
-          exampleExplanation: 'Chaque balise explicite son rôle structurel sans nécessiter de classes CSS artificielles pour l’accessibilité.',
-          order: 1,
-          durationMinutes: 15,
-          exercises: [
-            {
-              id: 1,
-              title: 'Quiz : Sémantique HTML5',
-              instructions: 'Quelle balise HTML5 est spécialement dédiée à englober le bloc de contenu principal et unique d’une page web ?',
-              validationType: 'qcm',
-              options: [
-                { id: 'a', label: '<section>' },
-                { id: 'b', label: '<main>' },
-                { id: 'c', label: '<div>' },
-                { id: 'd', label: '<content>' },
-              ],
-              order: 1,
-              passed: true,
-              attempts: 1,
-            },
-          ],
-        },
-        {
-          id: 2,
-          title: 'Alignement & Mise en Page avec Flexbox',
-          summary: 'Centrage et espacement régulier des composants.',
-          keyPoints: [
-            'display: flex active le modèle de boîte flexible unidimensionnel.',
-            'justify-content contrôle la distribution le long de l’axe principal.',
-            'align-items positionne et aligne les éléments sur l’axe transversal.',
-            'gap définit un espacement uniforme et propre sans marges parasites.',
-          ],
-          content: 'Flexbox simplifie la disposition et le centrage horizontal et vertical des composants sur tous les écrans.',
-          exampleCode: '.toolbar-actions {\n  display: flex;\n  justify-content: space-between;\n  align-items: center;\n  gap: 1.25rem;\n}',
-          exampleExplanation: 'Le conteneur distribue les boutons aux extrémités et les centre sur la hauteur.',
-          order: 2,
-          durationMinutes: 20,
-          exercises: [
-            {
-              id: 2,
-              title: 'Quiz : Alignement Flexbox',
-              instructions: 'Dans un conteneur en ligne (display: flex), quelle propriété CSS contrôle l’alignement des enfants sur l’axe transversal vertical ?',
-              validationType: 'qcm',
-              options: [
-                { id: 'a', label: 'align-items' },
-                { id: 'b', label: 'justify-content' },
-                { id: 'c', label: 'flex-align' },
-                { id: 'd', label: 'text-align' },
-              ],
-              order: 1,
-              passed: true,
-              attempts: 1,
-            },
-          ],
-        },
-      ],
-      finalQuest: {
-        id: 1,
-        code: 'Q-FULLSTACK-001',
-        title: 'Quête finale : Page de profil responsive',
-        description: 'Concevez une carte de profil responsive et sémantique en HTML5 et CSS Flexbox.',
-        stepId: 1,
-        xp: 150,
-        germs: 30,
-        unlocked: true,
-      },
+      title: module.title,
+      description: module.description,
+      order: module.order,
+      status: summary?.status ?? (module.order === 1 ? 'en_cours' : 'verrouille'),
+      exercisesTotal: exercises.length,
+      exercisesPassed: passed,
+      exercisesCompleted: passed === exercises.length,
+      lessons: module.lessons.map((lesson) => ({
+        id: lesson.id,
+        title: lesson.title,
+        summary: lesson.summary,
+        keyPoints: lesson.keyPoints,
+        content: lesson.content,
+        exampleCode: lesson.exampleCode,
+        exampleExplanation: lesson.exampleExplanation,
+        order: lesson.order,
+        durationMinutes: lesson.durationMinutes,
+        exercises: lesson.exercises.map((exercise) => {
+          // Même tirage que l'API : une question du pool, options mélangées.
+          const question = exercise.pool[Math.floor(Math.random() * exercise.pool.length)]
+          return {
+            id: exercise.id,
+            title: exercise.title,
+            instructions: question.question,
+            validationType: 'qcm',
+            options: shuffled(question.options),
+            questionId: question.id,
+            poolSize: exercise.pool.length,
+            order: exercise.order,
+            passed: Boolean(exerciseState[exercise.id]?.passed),
+            attempts: exerciseState[exercise.id]?.attempts ?? 0,
+          }
+        }),
+      })),
+      finalQuest: { ...module.finalQuest, unlocked: true },
     }
   },
 
-  async submitExercise(_exerciseId: number, answer: string): Promise<{ reussi: boolean; message: string; tentative: number }> {
+  async submitExercise(exerciseId: number, answer: string, questionId?: string): Promise<{ reussi: boolean; message: string; tentative: number }> {
     await delay(300)
-    const passed = answer.length > 5
+    const exercise = fullStackModules.flatMap((m) => m.lessons.flatMap((l) => l.exercises)).find((e) => e.id === exerciseId)
+    const question = exercise?.pool.find((q) => q.id === questionId)
+    if (!exercise || !question) throw new Error('Question inconnue pour ce QCM. Rechargez le chapitre.')
+
+    const entry = (exerciseState[exerciseId] ??= { passed: false, attempts: 0 })
+    entry.attempts += 1
+    const passed = answer.trim().toLowerCase() === question.correct
+    entry.passed ||= passed
+
     return {
       reussi: passed,
-      message: passed ? 'Exercice réussi avec succès !' : 'Critères non atteints.',
-      tentative: 1,
+      message: passed
+        ? `Bonne réponse ! ${question.explanation}`
+        : 'Ce n’est pas la bonne réponse. Relisez les points clés et réessayez !',
+      tentative: entry.attempts,
     }
   },
 

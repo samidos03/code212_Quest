@@ -1,4 +1,5 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
 import {
   AlertCircle,
   ArrowLeft,
@@ -668,7 +669,31 @@ function QcmExerciseCard({
   const [feedback, setFeedback] = useState<{ reussi: boolean; message: string } | null>(
     exercise.passed ? { reussi: true, message: 'Quiz déjà réussi avec succès !' } : null
   )
+  // La question affichée reste figée pendant que l'apprenant répond, même si
+  // le module est rechargé (et donc retiré au sort) après une tentative.
+  const [question, setQuestion] = useState(() => ({
+    id: exercise.questionId,
+    instructions: exercise.instructions,
+    options: exercise.options,
+  }))
+  const [wantsNewQuestion, setWantsNewQuestion] = useState(false)
   const submit = useSubmitExercise()
+  const queryClient = useQueryClient()
+
+  useEffect(() => {
+    if (!wantsNewQuestion) return
+    setQuestion({ id: exercise.questionId, instructions: exercise.instructions, options: exercise.options })
+    setSelectedOption('')
+    setFeedback(null)
+    setWantsNewQuestion(false)
+    // Se déclenche quand le module rechargé apporte un nouveau tirage.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [exercise])
+
+  const drawAnotherQuestion = () => {
+    setWantsNewQuestion(true)
+    queryClient.invalidateQueries({ queryKey: ['path', pathId, 'module', moduleId] })
+  }
 
   const handleValidate = () => {
     if (!selectedOption) return
@@ -677,6 +702,7 @@ function QcmExerciseCard({
       {
         exerciseId: exercise.id,
         answer: selectedOption,
+        questionId: question.id,
         pathId,
         stepId: moduleId,
       },
@@ -688,7 +714,7 @@ function QcmExerciseCard({
     )
   }
 
-  const isQcm = exercise.options && exercise.options.length > 0
+  const isQcm = question.options && question.options.length > 0
 
   return (
     <div className="panel p-5 space-y-4 border-2 border-border/80">
@@ -708,13 +734,13 @@ function QcmExerciseCard({
       </div>
 
       <p className="text-[13.5px] text-fg font-medium leading-relaxed">
-        {exercise.instructions}
+        {question.instructions}
       </p>
 
       {/* Choix multiples mélangés */}
       {isQcm ? (
         <div className="grid gap-2 sm:grid-cols-2">
-          {exercise.options!.map((opt) => {
+          {question.options!.map((opt) => {
             const isSelected = selectedOption === opt.id
 
             return (
@@ -772,7 +798,17 @@ function QcmExerciseCard({
         </div>
       )}
 
-      <div className="flex justify-end">
+      <div className="flex flex-wrap items-center justify-end gap-2">
+        {exercise.poolSize > 1 && (
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={drawAnotherQuestion}
+            disabled={submit.isPending || wantsNewQuestion}
+          >
+            {wantsNewQuestion ? 'Tirage...' : 'Tirer une autre question'}
+          </Button>
+        )}
         <Button
           size="sm"
           onClick={handleValidate}
