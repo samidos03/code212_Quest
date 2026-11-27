@@ -58,6 +58,13 @@ class TrainerReviewQueueTest extends TestCase
         $this->postJson("/api/v1/paths/{$this->path->id}/enroll")->assertSuccessful();
         $first = $this->submitFinalQuest('https://github.com/exemple/profil v1');
 
+        // Un second dépôt pendant l'attente est refusé en 409.
+        $quest = $this->module1->quest_id;
+        $step = \App\Models\QuestStep::query()->where('quest_id', $quest)->firstOrFail();
+        $this->postJson("/api/v1/quests/{$quest}/steps/{$step->id}/submit", ['contenu' => 'doublon'])
+            ->assertStatus(409)
+            ->assertJsonPath('message', 'Une tentative est déjà en attente de correction par un formateur.');
+
         // 2. Le formateur voit la tentative 1 dans la file.
         $this->asTrainer();
         $queue = $this->getJson('/api/v1/admin/submissions?statut=en_attente')->assertOk()->json('data');
@@ -108,6 +115,8 @@ class TrainerReviewQueueTest extends TestCase
             ->assertJsonPath('data.statut', 'approuvee');
 
         $this->asStudent();
+        $this->postJson("/api/v1/quests/{$quest}/steps/{$step->id}/submit", ['contenu' => 'après validation'])
+            ->assertStatus(409);
         $modules = collect($this->getJson("/api/v1/paths/{$this->path->id}")->json('data.modules'))->keyBy('id');
         $this->assertSame('termine', $modules[$this->module1->id]['statut']);
         $this->assertSame('en_cours', $modules[$this->module2->id]['statut']);
